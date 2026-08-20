@@ -21,7 +21,8 @@ Prasunethon 2.0 by Team Pudgala Matrix.
 - **Frontend:** React (Vite) + Tailwind CSS
 - **Backend:** Node.js + Express (thin relay — keeps the Gemini key server-side)
 - **AI:** Google Gemini API (free tier, no card required)
-- **Auth / DB / Storage:** Firebase (Anonymous Auth, Firestore, Storage)
+- - **Auth / DB:** Firebase (Anonymous Auth, Firestore — no Storage; photos
+  are compressed and stored directly in Firestore, see setup notes below)
 
 ---
 
