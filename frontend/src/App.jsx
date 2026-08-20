@@ -240,8 +240,8 @@ export default function App() {
           <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-12 sm:px-8 sm:pb-20 sm:pt-14 md:pt-24">
             <div className="mb-10 text-center sm:mb-12">
               <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-mint/80 sm:text-xs sm:tracking-[0.2em]">LastMile AI</p>
-              <h1 className="font-display text-[2.1rem] font-semibold leading-tight tracking-tight text-white sm:text-5xl">{uiLanguage === "hindi" ? "आप किस बारे में जानना चाहते हैं?" : "What are you curious about?"}</h1>
-              <p className="mx-auto mt-4 max-w-lg text-[13px] leading-6 text-white/45 sm:text-sm">{uiLanguage === "hindi" ? "अपनी पसंद की भाषा और लिपि में पूछें। अपनी नोटबुक की फोटो जोड़ें और हम इसे साथ में समझेंगे।" : "Ask in the language and script you are most comfortable with. Add a photo of your notebook and we’ll work through it together."}</p>
+              <h1 className="font-display text-[2.1rem] font-semibold leading-tight tracking-tight text-white sm:text-5xl">{copy.welcomeTitle}</h1>
+              <p className="mx-auto mt-4 max-w-lg text-[13px] leading-6 text-white/45 sm:text-sm">{copy.welcomeSubtitle}</p>
             </div>
             <DoubtCapture
               onAddText={handleAddText}
