@@ -1,31 +1,24 @@
 import { useState, useRef } from "react";
 
-const MAX_DIMENSION = 1280; // px, longest side
-const JPEG_QUALITY = 0.72;
-
 /**
- * Resizes + re-encodes a photo client-side before it ever touches Firestore.
- * Real phone camera photos are commonly 3–10MB — well past Firestore's 1MB
- * per-document limit (this app stores images inline in the doc, see
- * doubtsStore.js) and unnecessarily slow/expensive to send to Gemini.
- * Downscaling to ~1280px on the long side and re-encoding as JPEG typically
- * gets a photo under 150–300KB while staying easily legible for OCR.
+ * Resizes and compresses an image client-side before it ever touches
+ * Firestore — keeps documents small since we store images as base64
+ * directly (no Firebase Storage / no Blaze plan required).
  */
-function compressImageToBase64(file) {
+function compressImageToBase64(file, maxDimension = 1000, quality = 0.7) {
   return new Promise((resolve, reject) => {
+    const img = new Image();
     const reader = new FileReader();
+
     reader.onload = () => {
-      const img = new Image();
       img.onload = () => {
         let { width, height } = img;
-        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-          if (width >= height) {
-            height = Math.round((height * MAX_DIMENSION) / width);
-            width = MAX_DIMENSION;
-          } else {
-            width = Math.round((width * MAX_DIMENSION) / height);
-            height = MAX_DIMENSION;
-          }
+        if (width > height && width > maxDimension) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else if (height > maxDimension) {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
         }
 
         const canvas = document.createElement("canvas");
@@ -34,23 +27,11 @@ function compressImageToBase64(file) {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
 
-        const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
         const base64 = dataUrl.split(",")[1];
-
-        // Firestore document limit is 1MB total; base64 inflates size by
-        // ~33%, so keep the encoded string comfortably under that.
-        if (base64.length > 700_000) {
-          reject(
-            new Error(
-              "This photo is too large even after compression. Try a clearer, closer photo of just the problem."
-            )
-          );
-          return;
-        }
-
         resolve({ base64, mimeType: "image/jpeg" });
       };
-      img.onerror = () => reject(new Error("Could not read that image file."));
+      img.onerror = reject;
       img.src = reader.result;
     };
     reader.onerror = reject;
@@ -87,60 +68,64 @@ export default function DoubtCapture({
     try {
       const { base64, mimeType } = await compressImageToBase64(file);
       await onAddImage(base64, mimeType);
-    } catch (err) {
-      console.error("Photo capture failed:", err);
-      alert(err.message || "Could not process that photo. Please try another one.");
     } finally {
       setBusy(false);
-      e.target.value = ""; // allow re-selecting the same file later
+      e.target.value = "";
     }
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-3">
-      {classroomMode && (
-        <input
-          type="text"
-          placeholder="Student name (for this doubt)"
-          value={studentName}
-          onChange={(e) => setStudentName(e.target.value)}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+    <div className="bg-paperDim dark:bg-navyCard rounded-2xl shadow-paper dark:shadow-paperDark overflow-hidden">
+      <div className="notebook-edge" />
+      <div className="p-5 space-y-3">
+        {classroomMode && (
+          <input
+            type="text"
+            placeholder="Student name (for this doubt)"
+            value={studentName}
+            onChange={(e) => setStudentName(e.target.value)}
+            className="w-full bg-white/70 dark:bg-white/10 border border-ink/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm font-body text-ink dark:text-white placeholder:text-inkMuted dark:placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-accent/40"
+          />
+        )}
+
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Type your doubt here... Hinglish is totally fine!"
+          rows={4}
+          className="ruled-paper w-full bg-white/70 dark:bg-white/[0.06] border border-ink/10 dark:border-white/10 rounded-lg px-3 py-2.5 text-[15px] font-body text-ink dark:text-white placeholder:text-inkMuted dark:placeholder:text-white/35 resize-none focus:outline-none focus:ring-2 focus:ring-accent/40"
         />
-      )}
 
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Type your doubt here... (Hinglish is totally fine!)"
-        rows={3}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-navy/30"
-      />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleAddText}
+            disabled={busy || !text.trim()}
+            className="flex-1 bg-navy dark:bg-accent text-white rounded-xl py-2.5 text-sm font-semibold tracking-tight disabled:opacity-35 hover:brightness-110 active:scale-[0.99] transition"
+          >
+            Add for Later
+          </button>
 
-      <div className="flex items-center gap-2">
-        <button
-          onClick={handleAddText}
-          disabled={busy || !text.trim()}
-          className="flex-1 bg-navy text-white rounded-lg py-2 text-sm font-medium disabled:opacity-40 hover:bg-navyDark transition"
-        >
-          Add for Later
-        </button>
-
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={busy}
-          className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-40 hover:opacity-90 transition"
-          title="Photograph a handwritten doubt"
-        >
-          📷 Photo
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={handleFileChange}
-          className="hidden"
-        />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={busy}
+            className="bg-white dark:bg-white/10 text-navy dark:text-white border border-navy/15 dark:border-white/20 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-35 hover:bg-navy/5 dark:hover:bg-white/20 active:scale-[0.99] transition flex items-center gap-1.5"
+            title="Photograph a handwritten doubt"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+            Photo
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        </div>
       </div>
     </div>
   );

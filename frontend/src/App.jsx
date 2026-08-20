@@ -13,7 +13,58 @@ import { solveDoubts, simplifyDoubt } from "./lib/api.js";
 import DoubtCapture from "./components/DoubtCapture.jsx";
 import AnswerCard from "./components/AnswerCard.jsx";
 
+function useTheme() {
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem("lastmile-theme");
+    if (saved) return saved;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "dark") root.classList.add("dark");
+    else root.classList.remove("dark");
+    localStorage.setItem("lastmile-theme", theme);
+  }, [theme]);
+
+  return [theme, setTheme];
+}
+
+function ThemeToggle({ theme, setTheme }) {
+  const isDark = theme === "dark";
+  return (
+    <button
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition"
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label="Toggle dark mode"
+    >
+      {isDark ? (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+        </svg>
+      ) : (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/90">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+function LastMileBadge() {
+  return (
+    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-clay flex items-center justify-center shadow-md shrink-0">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 3z" />
+      </svg>
+    </div>
+  );
+}
+
 export default function App() {
+  const [theme, setTheme] = useTheme();
   const [deviceId, setDeviceId] = useState(null);
   const [doubts, setDoubts] = useState([]);
   const [classroomMode, setClassroomMode] = useState(false);
@@ -95,9 +146,9 @@ export default function App() {
   if (authError) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-navyDark font-body">
-        <div className="max-w-md bg-paper rounded-2xl shadow-paper p-6 text-center">
+        <div className="max-w-md bg-paper dark:bg-navyCard rounded-2xl shadow-paper p-6 text-center">
           <p className="text-clay font-semibold mb-2">Setup needed</p>
-          <p className="text-sm text-ink/70">{authError}</p>
+          <p className="text-sm text-ink/70 dark:text-white/70">{authError}</p>
         </div>
       </div>
     );
@@ -105,35 +156,43 @@ export default function App() {
 
   if (!deviceId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-navyDark">
-        <p className="text-white/40 text-sm font-body">Connecting...</p>
+      <div className="min-h-screen flex items-center justify-center bg-paper dark:bg-navyDark">
+        <p className="text-ink/40 dark:text-white/40 text-sm font-body">Connecting...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-navyDark">
-      <header className="bg-navy text-white px-4 py-4 sticky top-0 z-10 shadow-md">
+    <div className="min-h-screen bg-paper dark:bg-navyDark dot-grid-bg transition-colors">
+      <header className="bg-navy text-white px-4 py-3.5 sticky top-0 z-10 shadow-md">
         <div className="max-w-xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-display font-semibold tracking-tight">LastMile</h1>
-            <p className="text-[11px] text-white/60 font-body tracking-wide">
-              VERNACULAR AI DOUBT SOLVER
-            </p>
+          <div className="flex items-center gap-2.5">
+            <LastMileBadge />
+            <div>
+              <h1 className="text-xl font-display font-semibold tracking-tight leading-none">
+                LastMile
+              </h1>
+              <p className="text-[10.5px] text-white/55 font-body tracking-wide mt-0.5">
+                VERNACULAR AI DOUBT SOLVER
+              </p>
+            </div>
           </div>
-          <label className="flex items-center gap-2 text-xs font-body cursor-pointer select-none text-white/80">
-            <span>Classroom Mode</span>
-            <span className="relative inline-block w-9 h-5">
-              <input
-                type="checkbox"
-                checked={classroomMode}
-                onChange={(e) => setClassroomMode(e.target.checked)}
-                className="peer sr-only"
-              />
-              <span className="absolute inset-0 rounded-full bg-white/20 peer-checked:bg-accent transition-colors" />
-              <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform peer-checked:translate-x-4" />
-            </span>
-          </label>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-xs font-body cursor-pointer select-none text-white/80">
+              <span className="hidden sm:inline">Classroom</span>
+              <span className="relative inline-block w-9 h-5">
+                <input
+                  type="checkbox"
+                  checked={classroomMode}
+                  onChange={(e) => setClassroomMode(e.target.checked)}
+                  className="peer sr-only"
+                />
+                <span className="absolute inset-0 rounded-full bg-white/20 peer-checked:bg-accent transition-colors" />
+                <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform peer-checked:translate-x-4" />
+              </span>
+            </label>
+            <ThemeToggle theme={theme} setTheme={setTheme} />
+          </div>
         </div>
       </header>
 
@@ -162,7 +221,7 @@ export default function App() {
 
         {pending.length > 0 && (
           <section className="space-y-2.5">
-            <h2 className="text-[11px] font-bold text-white/40 uppercase tracking-widest font-body px-1">
+            <h2 className="text-[11px] font-bold text-ink/40 dark:text-white/40 uppercase tracking-widest font-body px-1">
               Pending &middot; {pending.length}
             </h2>
             <div className="space-y-2.5">
@@ -175,7 +234,7 @@ export default function App() {
 
         {solvedOrError.length > 0 && (
           <section className="space-y-2.5">
-            <h2 className="text-[11px] font-bold text-white/40 uppercase tracking-widest font-body px-1">
+            <h2 className="text-[11px] font-bold text-ink/40 dark:text-white/40 uppercase tracking-widest font-body px-1">
               Answered &middot; {solvedOrError.length}
             </h2>
             <div className="space-y-2.5">
@@ -193,7 +252,7 @@ export default function App() {
         )}
 
         {doubts.length === 0 && (
-          <p className="text-center text-sm text-white/35 font-body pt-10">
+          <p className="text-center text-sm text-ink/35 dark:text-white/35 font-body pt-10">
             No doubts yet — add one above whenever you get stuck.
           </p>
         )}

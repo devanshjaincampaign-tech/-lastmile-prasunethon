@@ -11,15 +11,9 @@ if (!apiKey) {
 
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-// The core prompt design for "register-matching": preserve the student's
-// own phrasing/language style instead of translating into formal English.
-//
-// IMPORTANT: the frontend renders answers as plain text (no LaTeX/Markdown
-// renderer), so the model must be explicitly told not to use LaTeX ($...$,
-// \frac, \sqrt, \pm) or Markdown (**bold**, * bullets) — otherwise those
-// symbols show up literally instead of being rendered. Keeping answers
-// short also directly reduces response latency, since generation time
-// scales with output length.
+// FORMATTING RULES: the frontend renders answers as plain text (no LaTeX
+// or Markdown renderer), so the model must avoid $, \frac, \sqrt, **bold**,
+// etc. — otherwise those symbols show up literally instead of rendering.
 const FORMATTING_RULES = `FORMATTING RULES (the app displays plain text only — no LaTeX, no Markdown renderer):
 - NEVER use LaTeX syntax: no $, $$, \\frac, \\sqrt, \\pm, \\times, or any backslash commands. Write math in plain words/symbols instead: "x squared" or "x^2", "plus or minus", "square root of 25", "5 times 2".
 - NEVER use Markdown syntax: no **bold**, no * or - bullet symbols, no # headings. Use plain numbered lines like "Step 1:" on their own line instead.
@@ -50,6 +44,12 @@ function getModel(systemInstruction, maxOutputTokens) {
     generationConfig: {
       maxOutputTokens,
       temperature: 0.4,
+      // Gemini 2.5/3.x Flash models spend part of maxOutputTokens on hidden
+      // internal reasoning before writing the visible answer, which was
+      // silently truncating short doubt explanations. A doubt-solver
+      // doesn't need that extra reasoning step, so we disable it — this
+      // both fixes truncation AND speeds up responses noticeably.
+      thinkingConfig: { thinkingBudget: 0 },
     },
   });
 }
@@ -67,7 +67,7 @@ function parseSubjectTag(rawText) {
  *   { type: "image", content: "<base64 data>", mimeType: "image/jpeg" }
  */
 export async function solveDoubt(doubt) {
-  const model = getModel(SYSTEM_INSTRUCTION, 500);
+  const model = getModel(SYSTEM_INSTRUCTION, 1024);
 
   let parts;
   if (doubt.type === "image") {
@@ -88,7 +88,7 @@ export async function solveDoubt(doubt) {
  * Re-explain a previously solved doubt at a simpler reading level.
  */
 export async function simplifyAnswer(originalDoubtText, originalAnswer) {
-  const model = getModel(SIMPLIFY_INSTRUCTION, 350);
+  const model = getModel(SIMPLIFY_INSTRUCTION, 700);
   const prompt = `Original doubt: ${originalDoubtText}\n\nOriginal explanation: ${originalAnswer}\n\nNow simplify it further.`;
   const result = await model.generateContent(prompt);
   return result.response.text().trim();

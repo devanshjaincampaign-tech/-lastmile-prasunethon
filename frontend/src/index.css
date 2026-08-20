@@ -2,15 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-  background-color: #141A46;
-}
-
 body {
   font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Visible keyboard focus everywhere — accessibility floor */
 :focus-visible {
   outline: 2px solid #ff7a45;
   outline-offset: 2px;
@@ -31,4 +26,39 @@ body {
   background-position: center;
   background-repeat: repeat-x;
   height: 6px;
+}
+.dark .notebook-edge {
+  background-image: radial-gradient(circle, #3a4380 1.5px, transparent 1.6px);
+}
+
+/* Faint ruled-notebook lines behind the doubt textarea — reinforces the
+   "photograph your notebook" concept instead of being decoration for its
+   own sake. */
+.ruled-paper {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 27px,
+    rgba(107, 100, 85, 0.14) 28px
+  );
+  background-attachment: local;
+}
+.dark .ruled-paper {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 27px,
+    rgba(255, 255, 255, 0.06) 28px
+  );
+}
+
+/* Subtle whole-page texture — a fine dot grid, very low opacity, so the
+   background reads as "considered" rather than a flat fill. */
+.dot-grid-bg {
+  background-image: radial-gradient(rgba(38, 36, 31, 0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.dark .dot-grid-bg {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
 }
