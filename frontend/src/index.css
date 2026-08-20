@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  background-color: #141A46;
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Visible keyboard focus everywhere — accessibility floor */
+:focus-visible {
+  outline: 2px solid #ff7a45;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Notebook perforation edge for the doubt-capture card */
+.notebook-edge {
+  background-image: radial-gradient(circle, #d9cfb4 1.5px, transparent 1.6px);
+  background-size: 16px 8px;
+  background-position: center;
+  background-repeat: repeat-x;
+  height: 6px;
+}
