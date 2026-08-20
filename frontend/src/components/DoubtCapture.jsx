@@ -1,12 +1,57 @@
 import { useState, useRef } from "react";
 
-function fileToBase64(file) {
+const MAX_DIMENSION = 1280; // px, longest side
+const JPEG_QUALITY = 0.72;
+
+/**
+ * Resizes + re-encodes a photo client-side before it ever touches Firestore.
+ * Real phone camera photos are commonly 3–10MB — well past Firestore's 1MB
+ * per-document limit (this app stores images inline in the doc, see
+ * doubtsStore.js) and unnecessarily slow/expensive to send to Gemini.
+ * Downscaling to ~1280px on the long side and re-encoding as JPEG typically
+ * gets a photo under 150–300KB while staying easily legible for OCR.
+ */
+function compressImageToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      // reader.result is "data:image/jpeg;base64,AAAA..." — strip the prefix
-      const base64 = reader.result.split(",")[1];
-      resolve({ base64, mimeType: file.type || "image/jpeg" });
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+          if (width >= height) {
+            height = Math.round((height * MAX_DIMENSION) / width);
+            width = MAX_DIMENSION;
+          } else {
+            width = Math.round((width * MAX_DIMENSION) / height);
+            height = MAX_DIMENSION;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+        const base64 = dataUrl.split(",")[1];
+
+        // Firestore document limit is 1MB total; base64 inflates size by
+        // ~33%, so keep the encoded string comfortably under that.
+        if (base64.length > 700_000) {
+          reject(
+            new Error(
+              "This photo is too large even after compression. Try a clearer, closer photo of just the problem."
+            )
+          );
+          return;
+        }
+
+        resolve({ base64, mimeType: "image/jpeg" });
+      };
+      img.onerror = () => reject(new Error("Could not read that image file."));
+      img.src = reader.result;
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
@@ -40,8 +85,11 @@ export default function DoubtCapture({
     if (!file) return;
     setBusy(true);
     try {
-      const { base64, mimeType } = await fileToBase64(file);
+      const { base64, mimeType } = await compressImageToBase64(file);
       await onAddImage(base64, mimeType);
+    } catch (err) {
+      console.error("Photo capture failed:", err);
+      alert(err.message || "Could not process that photo. Please try another one.");
     } finally {
       setBusy(false);
       e.target.value = ""; // allow re-selecting the same file later

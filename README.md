@@ -45,10 +45,11 @@ no credit card required.
 3. Go to **Build → Firestore Database → Create database** — start in
    **test mode** (fine for a hackathon demo; tighten rules before any real
    production use)
-4. Go to **Build → Storage → Get started** — also start in test mode
+4. You do **not** need to enable Firebase Storage — Storage now requires the
+   paid Blaze plan, so this app deliberately stores doubt photos (compressed
+   client-side to well under 300KB) directly inside the Firestore document
+   instead. Firestore alone stays on the free Spark plan.
 5. Go to **Project settings** (gear icon) → scroll to "Your apps" → click
-   the **Web** icon (`</>`) to register a web app → copy the config values
-   shown (apiKey, authDomain, projectId, etc.)
 
 ### 3. Configure the backend
 
