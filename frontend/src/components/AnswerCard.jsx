@@ -5,7 +5,7 @@ const STATUS_ACCENT = {
   error: "border-l-rose",
 };
 
-export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simplifying, retrying }) {
+export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simplifying, retrying, copy }) {
   const isPending = doubt.status === "pending";
   const isError = doubt.status === "error";
   const isSolved = doubt.status === "solved";
@@ -87,7 +87,7 @@ export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simpl
           {answerHistory.map((entry, index) => (
             <div key={`${entry.savedAt || "answer"}-${index}`} className="space-y-2">
               <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
-                {index === 0 ? "Earlier explanation" : `Previous explanation ${index + 1}`}
+                {index === 0 ? copy.earlierExplanation : `${copy.earlierExplanation} ${index + 1}`}
               </p>
               <div className="rounded-lg border border-white/[0.06] bg-shell/60 p-3.5 text-[14px] text-white/65 font-body whitespace-pre-wrap leading-relaxed">
                 {entry.answer}
@@ -96,7 +96,7 @@ export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simpl
           ))}
           <div className="space-y-2">
             {answerHistory.length > 0 && (
-              <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-mint/70">Latest simplified explanation</p>
+              <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-mint/70">{copy.latestSimplified}</p>
             )}
             <div className="bg-shell rounded-lg p-3.5 text-[14.5px] text-white/90 font-body whitespace-pre-wrap leading-relaxed">
               {doubt.answer}
@@ -108,10 +108,10 @@ export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simpl
             className="text-xs font-semibold text-mint hover:text-white disabled:opacity-40 font-body transition"
           >
             {simplifying
-              ? "Simplifying..."
+              ? copy.simplifying
               : doubt.gradeLevel === "simplified"
-                ? "Simplify Even More"
-                : "Simplify Further"}
+                ? copy.simplify
+                : copy.simplify}
           </button>
         </>
       )}

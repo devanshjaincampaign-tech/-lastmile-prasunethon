@@ -12,6 +12,7 @@ import {
 import { solveDoubts, simplifyDoubt } from "./lib/api.js";
 import DoubtCapture from "./components/DoubtCapture.jsx";
 import AnswerCard from "./components/AnswerCard.jsx";
+import { getUiCopy, INTERFACE_LANGUAGES } from "./lib/uiText.js";
 
 function useTheme() {
   const [theme, setTheme] = useState(() => {
@@ -64,7 +65,7 @@ function LastMileBadge() {
   );
 }
 
-function Sidebar({ doubts, pending, classroomMode, setClassroomMode, theme, setTheme }) {
+function Sidebar({ doubts, pending, classroomMode, setClassroomMode, theme, setTheme, uiLanguage, setUiLanguage, copy }) {
   const history = [...doubts].reverse();
   return (
     <aside className="glass-sidebar fixed inset-y-0 left-0 z-30 hidden h-dvh w-[276px] flex-col overflow-hidden border-r border-white/[0.1] px-3 py-4 md:flex">
@@ -72,26 +73,27 @@ function Sidebar({ doubts, pending, classroomMode, setClassroomMode, theme, setT
         <div className="flex items-center gap-2.5">
           <LastMileBadge />
           <div>
-            <p className="text-[17px] font-semibold tracking-tight text-white">LastMile</p>
-            <p className="text-[10px] tracking-[0.18em] text-white/35 uppercase">Learning companion</p>
+            <p className="last-mile-wordmark text-[17px] font-semibold tracking-tight text-white">LastMile</p>
+            <p className="text-[10px] tracking-[0.18em] text-white/35 uppercase">{copy.learningCompanion}</p>
           </div>
         </div>
         <ThemeToggle theme={theme} setTheme={setTheme} />
       </div>
-      <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="mb-6 flex items-center gap-2 rounded-lg bg-white/[0.08] px-3 py-2.5 text-left text-sm font-medium text-white/90 transition hover:bg-white/[0.13]"><span className="text-lg leading-none">+</span> New doubt</button>
-      <div className="mb-2 flex items-center justify-between px-2"><span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">Your history</span>{pending.length > 0 && <span className="rounded-full bg-mint/15 px-2 py-0.5 text-[10px] text-mint">{pending.length} open</span>}</div>
+      <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="mb-6 flex items-center gap-2 rounded-lg bg-white/[0.08] px-3 py-2.5 text-left text-sm font-medium text-white/90 transition hover:bg-white/[0.13]"><span className="text-lg leading-none">+</span> {copy.newDoubt}</button>
+      <div className="mb-2 flex items-center justify-between px-2"><span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">{copy.yourHistory}</span>{pending.length > 0 && <span className="rounded-full bg-mint/15 px-2 py-0.5 text-[10px] text-mint">{pending.length} {copy.open}</span>}</div>
       <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
-        {history.length === 0 && <p className="px-2 py-5 text-xs leading-relaxed text-white/30">Your questions will appear here as you learn.</p>}
+        {history.length === 0 && <p className="px-2 py-5 text-xs leading-relaxed text-white/30">{copy.historyEmpty}</p>}
         {history.map((doubt) => (
           <button key={doubt.id} onClick={() => document.getElementById(`doubt-${doubt.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })} className="group flex w-full items-start gap-2 rounded-lg px-2 py-2 text-left transition hover:bg-white/[0.07]">
             <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${doubt.status === "solved" ? "bg-mint" : doubt.status === "error" ? "bg-rose" : "bg-white/35"}`} />
-            <span className="line-clamp-2 text-[12px] leading-5 text-white/55 group-hover:text-white/85">{doubt.type === "image" ? "Photo question" : doubt.content}</span>
+            <span className="line-clamp-2 text-[12px] leading-5 text-white/55 group-hover:text-white/85">{doubt.type === "image" ? copy.photoQuestion : doubt.content}</span>
           </button>
         ))}
       </nav>
       <div className="sticky bottom-0 z-10 -mx-3 mt-4 shrink-0 border-t border-white/[0.08] bg-[#111110]/80 px-3 pt-4 backdrop-blur-xl">
-        <label className="flex cursor-pointer items-center justify-between px-2 text-xs text-white/55">Classroom mode<span className="relative inline-block h-5 w-9"><input type="checkbox" checked={classroomMode} onChange={(e) => setClassroomMode(e.target.checked)} className="peer sr-only" /><span className="absolute inset-0 rounded-full bg-white/15 peer-checked:bg-mint/70 transition-colors" /><span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-4" /></span></label>
-        <p className="px-2 pt-4 text-[11px] text-white/25">Made for curious minds, in every language.</p>
+        <label className="flex cursor-pointer items-center justify-between px-2 text-xs text-white/55">{copy.classroomMode}<span className="relative inline-block h-5 w-9"><input type="checkbox" checked={classroomMode} onChange={(e) => setClassroomMode(e.target.checked)} className="peer sr-only" /><span className="absolute inset-0 rounded-full bg-white/15 peer-checked:bg-mint/70 transition-colors" /><span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-4" /></span></label>
+        <label className="mt-4 flex items-center justify-between gap-2 px-2 text-xs text-white/55">{copy.uiLanguage}<select value={uiLanguage} onChange={(e) => setUiLanguage(e.target.value)} className="language-select min-w-0 max-w-[126px] rounded-md border border-white/10 bg-white/[0.06] px-2 py-1 text-xs text-white/75 outline-none">{INTERFACE_LANGUAGES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <p className="px-2 pt-4 text-[11px] text-white/25">{copy.footer}</p>
       </div>
     </aside>
   );
@@ -104,10 +106,16 @@ export default function App() {
   const [classroomMode, setClassroomMode] = useState(false);
   const [studentName, setStudentName] = useState("Self");
   const [preferredLanguage, setPreferredLanguage] = useState("auto");
+  const [uiLanguage, setUiLanguage] = useState(() => localStorage.getItem("lastmile-ui-language") || "english");
   const [solving, setSolving] = useState(false);
   const [simplifyingId, setSimplifyingId] = useState(null);
   const [retryingId, setRetryingId] = useState(null);
   const [authError, setAuthError] = useState(null);
+  const copy = getUiCopy(uiLanguage);
+
+  useEffect(() => {
+    localStorage.setItem("lastmile-ui-language", uiLanguage);
+  }, [uiLanguage]);
 
   useEffect(() => {
     ensureAnonymousAuth()
@@ -223,17 +231,17 @@ export default function App() {
   return (
     <div className="app-shell min-h-dvh overflow-x-hidden bg-shell text-white transition-colors">
       <div className="flex min-h-dvh">
-        <Sidebar doubts={doubts} pending={pending} classroomMode={classroomMode} setClassroomMode={setClassroomMode} theme={theme} setTheme={setTheme} />
+        <Sidebar doubts={doubts} pending={pending} classroomMode={classroomMode} setClassroomMode={setClassroomMode} theme={theme} setTheme={setTheme} uiLanguage={uiLanguage} setUiLanguage={setUiLanguage} copy={copy} />
         <main className="min-h-dvh min-w-0 flex-1 md:ml-[276px]">
           <header className="sticky top-0 z-20 flex items-center justify-between border-b border-white/[0.08] bg-shell/80 px-4 py-3 backdrop-blur-xl md:hidden sm:px-5 sm:py-4">
-            <div className="flex items-center gap-2"><LastMileBadge /><span className="font-semibold">LastMile</span></div>
+            <div className="flex items-center gap-2"><LastMileBadge /><span className="last-mile-wordmark font-semibold">LastMile</span></div>
             <ThemeToggle theme={theme} setTheme={setTheme} />
           </header>
           <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-12 sm:px-8 sm:pb-20 sm:pt-14 md:pt-24">
             <div className="mb-10 text-center sm:mb-12">
               <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-mint/80 sm:text-xs sm:tracking-[0.2em]">LastMile AI</p>
-              <h1 className="font-display text-[2.1rem] font-semibold leading-tight tracking-tight text-white sm:text-5xl">What are you curious about?</h1>
-              <p className="mx-auto mt-4 max-w-lg text-[13px] leading-6 text-white/45 sm:text-sm">Ask in the language and script you are most comfortable with. Add a photo of your notebook and we’ll work through it together.</p>
+              <h1 className="font-display text-[2.1rem] font-semibold leading-tight tracking-tight text-white sm:text-5xl">{uiLanguage === "hindi" ? "आप किस बारे में जानना चाहते हैं?" : "What are you curious about?"}</h1>
+              <p className="mx-auto mt-4 max-w-lg text-[13px] leading-6 text-white/45 sm:text-sm">{uiLanguage === "hindi" ? "अपनी पसंद की भाषा और लिपि में पूछें। अपनी नोटबुक की फोटो जोड़ें और हम इसे साथ में समझेंगे।" : "Ask in the language and script you are most comfortable with. Add a photo of your notebook and we’ll work through it together."}</p>
             </div>
             <DoubtCapture
               onAddText={handleAddText}
@@ -243,6 +251,8 @@ export default function App() {
               setStudentName={setStudentName}
               preferredLanguage={preferredLanguage}
               setPreferredLanguage={setPreferredLanguage}
+              uiLanguage={uiLanguage}
+              copy={copy}
             />
 
             {pending.length > 0 && (
@@ -262,7 +272,7 @@ export default function App() {
             {pending.length > 0 && (
               <section className="mt-10 space-y-2.5">
                 <h2 className="text-[11px] font-bold text-white/35 uppercase tracking-widest font-body px-1">
-                  Pending &middot; {pending.length}
+                  {copy.pending} &middot; {pending.length}
                 </h2>
                 <div className="space-y-2.5">
                   {pending.map((d) => (
@@ -272,6 +282,7 @@ export default function App() {
                       onDelete={handleDelete}
                       onRetry={handleRetry}
                       retrying={retryingId === d.id}
+                      copy={copy}
                     />
                   ))}
                 </div>
@@ -281,7 +292,7 @@ export default function App() {
             {solved.length > 0 && (
               <section className="mt-10 space-y-2.5">
                 <h2 className="text-[11px] font-bold text-white/35 uppercase tracking-widest font-body px-1">
-                  Answered &middot; {solved.length}
+                  {copy.answered} &middot; {solved.length}
                 </h2>
                 <div className="space-y-2.5">
                   {solved.map((d) => (
@@ -291,13 +302,14 @@ export default function App() {
                       onSimplify={handleSimplify}
                       onDelete={handleDelete}
                       simplifying={simplifyingId === d.id}
+                      copy={copy}
                     />
                   ))}
                 </div>
               </section>
             )}
 
-            {doubts.length === 0 && <p className="pt-10 text-center text-sm text-white/25 font-body">Your learning history will appear in the sidebar.</p>}
+            {doubts.length === 0 && <p className="pt-10 text-center text-sm text-white/25 font-body">{copy.noHistory}</p>}
           </div>
         </main>
       </div>

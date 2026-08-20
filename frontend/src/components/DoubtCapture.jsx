@@ -48,6 +48,8 @@ export default function DoubtCapture({
   setStudentName,
   preferredLanguage,
   setPreferredLanguage,
+  uiLanguage,
+  copy,
 }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -187,7 +189,7 @@ export default function DoubtCapture({
 
         <div className="flex flex-wrap items-center justify-between gap-2 px-2 pt-1">
           <label className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/35" htmlFor="answer-language">
-            Answer language
+            {copy.answerLanguage}
           </label>
           <select
             id="answer-language"
@@ -195,7 +197,7 @@ export default function DoubtCapture({
             onChange={(e) => setPreferredLanguage(e.target.value)}
             className="language-select rounded-md border border-white/10 bg-white/[0.06] px-2 py-1 text-xs text-white/75 outline-none focus:ring-2 focus:ring-mint/40"
           >
-            <option value="auto">Auto-detect</option>
+            <option value="auto">{copy.autoDetect}</option>
             <option value="english">English</option>
             <option value="hindi">Hindi</option>
             <option value="hinglish">Hinglish</option>
@@ -227,7 +229,7 @@ export default function DoubtCapture({
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Ask anything..."
+          placeholder={copy.askPlaceholder}
           rows={5}
           className="w-full bg-transparent px-2 py-2.5 text-[16px] font-body text-white placeholder:text-white/35 resize-none focus:outline-none"
         />
@@ -238,7 +240,7 @@ export default function DoubtCapture({
             disabled={busy || !text.trim()}
             className="min-w-[9rem] flex-1 bg-mint text-shell rounded-lg py-2.5 text-sm font-semibold tracking-tight disabled:opacity-35 hover:bg-mint/90 active:scale-[0.99] transition"
           >
-            Add for Later
+            {copy.addLater}
           </button>
 
           <button
@@ -251,14 +253,14 @@ export default function DoubtCapture({
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
               <circle cx="12" cy="13" r="4" />
             </svg>
-            Take photo
+            {copy.takePhoto}
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={busy}
             className="min-w-[6.5rem] flex-1 rounded-lg border border-white/10 bg-white/[0.06] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10 disabled:opacity-35"
           >
-            Upload image
+            {copy.uploadImage}
           </button>
           <input id="camera-input" type="file" accept="image/*" capture="environment" onChange={handleFileChange} className="hidden" />
           <input
@@ -278,10 +280,10 @@ export default function DoubtCapture({
           <div className="w-full max-w-2xl rounded-2xl border border-white/20 bg-[#171716] p-4 shadow-2xl shadow-black/50 sm:p-6">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <p className="text-base font-semibold text-white">{capturedPreview ? "Review your photo" : "Camera"}</p>
-                <p className="mt-1 text-xs text-white/45">{capturedPreview ? "Retake it or use this photo for your doubt." : "Position the question clearly inside the frame."}</p>
+                <p className="text-base font-semibold text-white">{capturedPreview ? copy.reviewPhoto : copy.camera}</p>
+                <p className="mt-1 text-xs text-white/45">{capturedPreview ? copy.reviewHint : copy.cameraHint}</p>
               </div>
-              <button onClick={stopCamera} disabled={busy} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-2xl leading-none text-white hover:bg-white/20 disabled:opacity-50" aria-label="Close camera">&times;</button>
+              <button onClick={stopCamera} disabled={busy} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-2xl leading-none text-white hover:bg-white/20 disabled:opacity-50" aria-label={copy.close}>&times;</button>
             </div>
             {capturedPreview ? (
               <img src={capturedPreview} alt="Captured doubt preview" className="max-h-[62vh] min-h-[240px] w-full rounded-xl bg-black object-contain" />
@@ -291,13 +293,13 @@ export default function DoubtCapture({
             <div className="mt-4 grid grid-cols-2 gap-3 sm:flex sm:justify-end">
               {capturedPreview ? (
                 <>
-                  <button onClick={retakePhoto} disabled={busy} className="order-2 rounded-lg border border-white/20 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50 sm:order-1">Retake</button>
-                  <button onClick={useCapturedPhoto} disabled={busy} className="order-1 rounded-lg bg-mint px-5 py-3 text-sm font-bold text-shell disabled:opacity-50 sm:order-2">{busy ? "Adding photo..." : "Use photo"}</button>
+                  <button onClick={retakePhoto} disabled={busy} className="order-2 rounded-lg border border-white/20 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50 sm:order-1">{copy.retake}</button>
+                  <button onClick={useCapturedPhoto} disabled={busy} className="order-1 rounded-lg bg-mint px-5 py-3 text-sm font-bold text-shell disabled:opacity-50 sm:order-2">{busy ? copy.addingPhoto : copy.usePhoto}</button>
                 </>
               ) : (
                 <>
-                  <button onClick={stopCamera} disabled={busy} className="order-2 rounded-lg border border-white/20 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50 sm:order-1">Back</button>
-                  <button onClick={capturePhoto} disabled={busy} className="order-1 rounded-lg bg-mint px-5 py-3 text-sm font-bold text-shell disabled:opacity-50 sm:order-2">{busy ? "Processing..." : "Capture photo"}</button>
+                  <button onClick={stopCamera} disabled={busy} className="order-2 rounded-lg border border-white/20 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50 sm:order-1">{copy.back}</button>
+                  <button onClick={capturePhoto} disabled={busy} className="order-1 rounded-lg bg-mint px-5 py-3 text-sm font-bold text-shell disabled:opacity-50 sm:order-2">{busy ? copy.processing : copy.capturePhoto}</button>
                 </>
               )}
             </div>
