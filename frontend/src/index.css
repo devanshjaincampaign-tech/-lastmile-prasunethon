@@ -3,11 +3,174 @@
 @tailwind utilities;
 
 body {
-  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  background: #171716;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+.app-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.app-shell::before,
+.app-shell::after {
+  position: fixed;
+  z-index: -1;
+  width: 22rem;
+  height: 22rem;
+  border-radius: 999px;
+  content: "";
+  pointer-events: none;
+  filter: blur(70px);
+  opacity: 0.2;
+}
+
+.app-shell::before {
+  top: 8%;
+  right: 8%;
+  background: #b8d8c0;
+}
+
+.app-shell::after {
+  bottom: 4%;
+  left: 32%;
+  background: #c99aa7;
+  opacity: 0.13;
+}
+
+.glass-sidebar,
+.glass-composer,
+.glass-card {
+  background: rgba(34, 34, 32, 0.62);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
+  backdrop-filter: blur(24px) saturate(120%);
+}
+
+.glass-sidebar {
+  background: rgba(17, 17, 16, 0.78);
+  box-shadow: 14px 0 48px rgba(0, 0, 0, 0.18);
+}
+
+.glass-composer {
+  box-shadow: 0 0 0 1px rgba(184, 216, 192, 0.04), 0 18px 60px rgba(0, 0, 0, 0.28), 0 0 36px rgba(184, 216, 192, 0.08);
+}
+
+.glass-card {
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.16);
+}
+
+button,
+textarea,
+input {
+  max-width: 100%;
+}
+
+* {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  scrollbar-width: thin;
+}
+
+.language-select {
+  color-scheme: dark;
+}
+
+.language-select option {
+  background: #292927;
+  color: #ffffff;
+}
+
+.light body {
+  background: #f1f2ed;
+}
+
+.light .app-shell {
+  background: #f1f2ed;
+  color: #20231f;
+}
+
+.light .app-shell::before {
+  opacity: 0.14;
+}
+
+.light .app-shell::after {
+  opacity: 0.09;
+}
+
+.light .glass-sidebar {
+  background: rgba(247, 248, 243, 0.82);
+  border-color: rgba(32, 35, 31, 0.1);
+  box-shadow: 14px 0 48px rgba(32, 35, 31, 0.08);
+}
+
+.light .last-mile-badge {
+  background: #1c211d;
+  box-shadow: 0 5px 18px rgba(28, 33, 29, 0.2);
+}
+
+.light .app-shell h1,
+.light .app-shell h2,
+.light .app-shell p,
+.light .app-shell label,
+.light .app-shell button,
+.light .app-shell select,
+.light .app-shell textarea,
+.light .app-shell input {
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.12);
+}
+
+.light .app-shell [class*="bg-[#111110"] {
+  background: rgba(247, 248, 243, 0.82);
+}
+
+.light .glass-composer,
+.light .glass-card {
+  background: rgba(255, 255, 255, 0.58);
+  border-color: rgba(32, 35, 31, 0.18);
+  box-shadow: 0 14px 40px rgba(32, 35, 31, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  -webkit-backdrop-filter: blur(24px) saturate(115%);
+  backdrop-filter: blur(24px) saturate(115%);
+}
+
+.light .glass-composer {
+  box-shadow: 0 0 0 1px rgba(92, 128, 100, 0.08), 0 18px 60px rgba(32, 35, 31, 0.12);
+}
+
+.light .app-shell [class*="text-white"] {
+  color: #20231f !important;
+}
+
+.light .app-shell [class*="text-white/"] {
+  color: rgba(24, 27, 24, 0.78) !important;
+}
+
+.light .app-shell [class*="bg-white/"] {
+  background-color: rgba(32, 35, 31, 0.06);
+}
+
+.light .app-shell .bg-shell {
+  background-color: #e7e9e2;
+}
+
+.light .app-shell .language-select {
+  color-scheme: light;
+  background-color: rgba(32, 35, 31, 0.06);
+  color: #20231f;
+}
+
+.light .app-shell .language-select option {
+  background: #ffffff;
+  color: #20231f;
 }
 
 :focus-visible {
-  outline: 2px solid #ff7a45;
+  outline: 2px solid #b8d8c0;
   outline-offset: 2px;
 }
 
@@ -17,61 +180,4 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-/* Notebook perforation edge for the doubt-capture card */
-.notebook-edge {
-  background-image: radial-gradient(circle, #d9cfb4 1.5px, transparent 1.6px);
-  background-size: 16px 8px;
-  background-position: center;
-  background-repeat: repeat-x;
-  height: 6px;
-}
-.dark .notebook-edge {
-  background-image: radial-gradient(circle, #3a4380 1.5px, transparent 1.6px);
-}
-
-/* Faint ruled-notebook lines behind the doubt textarea — reinforces the
-   "photograph your notebook" concept instead of being decoration for its
-   own sake. */
-.ruled-paper {
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent,
-    transparent 27px,
-    rgba(107, 100, 85, 0.14) 28px
-  );
-  background-attachment: local;
-}
-.dark .ruled-paper {
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent,
-    transparent 27px,
-    rgba(255, 255, 255, 0.06) 28px
-  );
-}
-
-/* Subtle whole-page texture — a fine dot grid, very low opacity, so the
-   background reads as "considered" rather than a flat fill. */
-.dot-grid-bg {
-  background-image: radial-gradient(rgba(38, 36, 31, 0.06) 1px, transparent 1px);
-  background-size: 22px 22px;
-}
-.dark .dot-grid-bg {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
-  background-size: 22px 22px;
-}
-
-.bg-blob-orange {
-  background: radial-gradient(circle, rgba(255, 122, 69, 0.35), transparent 70%);
-}
-.bg-blob-navy {
-  background: radial-gradient(circle, rgba(30, 39, 97, 0.3), transparent 70%);
-}
-.dark .bg-blob-navy {
-  background: radial-gradient(circle, rgba(90, 105, 200, 0.25), transparent 70%);
-}
-.bg-blob-sage {
-  background: radial-gradient(circle, rgba(107, 144, 128, 0.3), transparent 70%);
 }

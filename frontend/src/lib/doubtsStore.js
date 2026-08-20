@@ -8,6 +8,7 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  arrayUnion,
 } from "firebase/firestore";
 import { db } from "./firebase.js";
 
@@ -36,10 +37,12 @@ export function subscribeToDoubts(deviceId, callback) {
 }
 
 /** Adds a text doubt to the queue. */
-export async function addTextDoubt(deviceId, text, studentName = "Self") {
+export async function addTextDoubt(deviceId, text, studentName = "Self", preferredLanguage = "auto") {
   await addDoc(doubtsCollection(deviceId), {
     type: "text",
     content: text,
+    inputMethod: "text",
+    preferredLanguage,
     studentName,
     status: "pending",
     answer: null,
@@ -56,11 +59,13 @@ export async function addTextDoubt(deviceId, text, studentName = "Self") {
  * in the Firestore document, doubling as both the display image and the
  * payload sent to Gemini for solving. No Storage bucket involved.
  */
-export async function addImageDoubt(deviceId, base64Data, mimeType, studentName = "Self") {
+export async function addImageDoubt(deviceId, base64Data, mimeType, studentName = "Self", preferredLanguage = "auto") {
   await addDoc(doubtsCollection(deviceId), {
     type: "image",
     content: base64Data,
     mimeType,
+    inputMethod: "photo",
+    preferredLanguage,
     studentName,
     status: "pending",
     answer: null,
@@ -90,11 +95,15 @@ export async function markError(deviceId, doubtId, errorMessage) {
 }
 
 /** Updates the answer text after a "simplify" call. */
-export async function updateSimplifiedAnswer(deviceId, doubtId, simplifiedAnswer) {
-  await updateDoc(doc(db, "devices", deviceId, "doubts", doubtId), {
+export async function updateSimplifiedAnswer(deviceId, doubtId, simplifiedAnswer, previousAnswer) {
+  const updates = {
     answer: simplifiedAnswer,
     gradeLevel: "simplified",
-  });
+  };
+  if (previousAnswer) {
+    updates.answerHistory = arrayUnion({ answer: previousAnswer, savedAt: new Date().toISOString() });
+  }
+  await updateDoc(doc(db, "devices", deviceId, "doubts", doubtId), updates);
 }
 
 /** Removes a doubt from the queue. */

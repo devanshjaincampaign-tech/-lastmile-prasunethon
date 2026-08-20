@@ -19,7 +19,7 @@ const FORMATTING_RULES = `FORMATTING RULES (the app displays plain text only —
 - NEVER use Markdown syntax: no **bold**, no * or - bullet symbols, no # headings. Use plain numbered lines like "Step 1:" on their own line instead.
 - Keep it SHORT: aim for under 120 words for a typical doubt. Solve the student's actual question directly — do NOT make up a separate example problem to explain the method first.`;
 
-const SYSTEM_INSTRUCTION = `You are LastMile, a friendly doubt-solving assistant for Indian students in Tier 3-5 towns, many studying in Hindi or regional-medium government schools.
+const BASE_SYSTEM_INSTRUCTION = `You are LastMile, a friendly doubt-solving assistant for Indian students in Tier 3-5 towns, many studying in Hindi or regional-medium government schools.
 
 RULES YOU MUST FOLLOW:
 1. Read the student's doubt (it may be typed as Hinglish, mixed Hindi-English, or plain English; it may also be a photo of a handwritten problem).
@@ -33,6 +33,13 @@ RULES YOU MUST FOLLOW:
    SUBJECT: <one or two word subject tag, e.g. "Math", "Physics", "Chemistry", "Biology", "English", "General">
 
 Respond with ONLY the explanation followed by the SUBJECT line. No preamble like "Sure, here's the answer".`;
+
+function buildSystemInstruction(preferredLanguage = "auto") {
+  const languageRule = preferredLanguage === "auto"
+    ? "Detect the student's language, script, and register. Roman letters do not necessarily mean English: understand Romanized Hindi, Bhojpuri, and Maithili. Reply in the same natural language style unless clarity requires a brief bilingual term."
+    : `Prefer ${preferredLanguage} for the explanation. If the student's input is written in Roman letters, preserve that Romanized style where natural. Still understand mixed Hindi-English and local-language technical terms.`;
+  return `${BASE_SYSTEM_INSTRUCTION}\n6. ${languageRule}`;
+}
 
 const SIMPLIFY_INSTRUCTION = `You are LastMile, a friendly doubt-solving assistant. You previously gave an explanation to a student. They found it too hard and tapped "Simplify Further". Re-explain the SAME answer in a much simpler way, as if explaining to a younger student (around Class 6 level). Keep the same natural register/language style (Hinglish stays Hinglish, English stays English) but use shorter sentences, simpler words, and a very basic analogy if it helps. ${FORMATTING_RULES} Respond with ONLY the simplified explanation, no preamble.`;
 
@@ -66,7 +73,7 @@ function parseSubjectTag(rawText) {
  *   { type: "image", content: "<base64 data>", mimeType: "image/jpeg" }
  */
 export async function solveDoubt(doubt) {
-  const model = getModel(SYSTEM_INSTRUCTION, 1024);
+  const model = getModel(buildSystemInstruction(doubt.preferredLanguage), 1024);
 
   let parts;
   if (doubt.type === "image") {

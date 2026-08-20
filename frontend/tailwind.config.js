@@ -5,6 +5,12 @@ export default {
   theme: {
     extend: {
       colors: {
+        shell: "#171716",
+        sidebar: "#111110",
+        card: "#222220",
+        composer: "#292927",
+        mint: "#B8D8C0",
+        rose: "#E49A9A",
         paper: "#F6F1E4",
         paperDim: "#EDE6D3",
         ink: "#26241F",

@@ -11,6 +11,7 @@ export async function solveDoubts(doubts) {
     type: d.type,
     content: d.content,
     mimeType: d.mimeType,
+    preferredLanguage: d.preferredLanguage || "auto",
   }));
 
   const res = await fetch(`${API_BASE}/api/solve`, {
