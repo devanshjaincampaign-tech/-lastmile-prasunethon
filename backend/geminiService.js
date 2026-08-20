@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const apiKey = process.env.GEMINI_API_KEY;
-const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const modelName = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 
 if (!apiKey) {
   console.warn(
@@ -13,6 +13,18 @@ const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 // The core prompt design for "register-matching": preserve the student's
 // own phrasing/language style instead of translating into formal English.
+//
+// IMPORTANT: the frontend renders answers as plain text (no LaTeX/Markdown
+// renderer), so the model must be explicitly told not to use LaTeX ($...$,
+// \frac, \sqrt, \pm) or Markdown (**bold**, * bullets) — otherwise those
+// symbols show up literally instead of being rendered. Keeping answers
+// short also directly reduces response latency, since generation time
+// scales with output length.
+const FORMATTING_RULES = `FORMATTING RULES (the app displays plain text only — no LaTeX, no Markdown renderer):
+- NEVER use LaTeX syntax: no $, $$, \\frac, \\sqrt, \\pm, \\times, or any backslash commands. Write math in plain words/symbols instead: "x squared" or "x^2", "plus or minus", "square root of 25", "5 times 2".
+- NEVER use Markdown syntax: no **bold**, no * or - bullet symbols, no # headings. Use plain numbered lines like "Step 1:" on their own line instead.
+- Keep it SHORT: aim for under 120 words for a typical doubt. Solve the student's actual question directly — do NOT make up a separate example problem to explain the method first.`;
+
 const SYSTEM_INSTRUCTION = `You are LastMile, a friendly doubt-solving assistant for Indian students in Tier 3-5 towns, many studying in Hindi or regional-medium government schools.
 
 RULES YOU MUST FOLLOW:
@@ -22,17 +34,24 @@ RULES YOU MUST FOLLOW:
    - If they wrote in Hinglish/casual mixed language, explain back in a similarly natural, conversational Hinglish tone — NOT stiff textbook-formal English, and not pure Hindi if they wrote Hinglish.
    - If they wrote in plain English, explain in clear, simple English.
    - Never sound like a formal textbook. Sound like a patient senior student or older sibling explaining it.
-4. Keep explanations concise but complete — enough to actually understand the step, not a wall of text.
+4. ${FORMATTING_RULES}
 5. At the end, on a new line, output exactly one line in this format (used internally, not shown to the student as prose):
    SUBJECT: <one or two word subject tag, e.g. "Math", "Physics", "Chemistry", "Biology", "English", "General">
 
 Respond with ONLY the explanation followed by the SUBJECT line. No preamble like "Sure, here's the answer".`;
 
-const SIMPLIFY_INSTRUCTION = `You are LastMile, a friendly doubt-solving assistant. You previously gave an explanation to a student. They found it too hard and tapped "Simplify Further". Re-explain the SAME answer in a much simpler way, as if explaining to a younger student (around Class 6 level). Keep the same natural register/language style (Hinglish stays Hinglish, English stays English) but use shorter sentences, simpler words, and a very basic analogy if it helps. Respond with ONLY the simplified explanation, no preamble.`;
+const SIMPLIFY_INSTRUCTION = `You are LastMile, a friendly doubt-solving assistant. You previously gave an explanation to a student. They found it too hard and tapped "Simplify Further". Re-explain the SAME answer in a much simpler way, as if explaining to a younger student (around Class 6 level). Keep the same natural register/language style (Hinglish stays Hinglish, English stays English) but use shorter sentences, simpler words, and a very basic analogy if it helps. ${FORMATTING_RULES} Respond with ONLY the simplified explanation, no preamble.`;
 
-function getModel(systemInstruction) {
+function getModel(systemInstruction, maxOutputTokens) {
   if (!genAI) throw new Error("Gemini API key not configured on the server.");
-  return genAI.getGenerativeModel({ model: modelName, systemInstruction });
+  return genAI.getGenerativeModel({
+    model: modelName,
+    systemInstruction,
+    generationConfig: {
+      maxOutputTokens,
+      temperature: 0.4,
+    },
+  });
 }
 
 function parseSubjectTag(rawText) {
@@ -48,7 +67,7 @@ function parseSubjectTag(rawText) {
  *   { type: "image", content: "<base64 data>", mimeType: "image/jpeg" }
  */
 export async function solveDoubt(doubt) {
-  const model = getModel(SYSTEM_INSTRUCTION);
+  const model = getModel(SYSTEM_INSTRUCTION, 500);
 
   let parts;
   if (doubt.type === "image") {
@@ -69,7 +88,7 @@ export async function solveDoubt(doubt) {
  * Re-explain a previously solved doubt at a simpler reading level.
  */
 export async function simplifyAnswer(originalDoubtText, originalAnswer) {
-  const model = getModel(SIMPLIFY_INSTRUCTION);
+  const model = getModel(SIMPLIFY_INSTRUCTION, 350);
   const prompt = `Original doubt: ${originalDoubtText}\n\nOriginal explanation: ${originalAnswer}\n\nNow simplify it further.`;
   const result = await model.generateContent(prompt);
   return result.response.text().trim();
