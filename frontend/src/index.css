@@ -62,3 +62,16 @@ body {
   background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
   background-size: 22px 22px;
 }
+
+.bg-blob-orange {
+  background: radial-gradient(circle, rgba(255, 122, 69, 0.35), transparent 70%);
+}
+.bg-blob-navy {
+  background: radial-gradient(circle, rgba(30, 39, 97, 0.3), transparent 70%);
+}
+.dark .bg-blob-navy {
+  background: radial-gradient(circle, rgba(90, 105, 200, 0.25), transparent 70%);
+}
+.bg-blob-sage {
+  background: radial-gradient(circle, rgba(107, 144, 128, 0.3), transparent 70%);
+}

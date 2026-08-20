@@ -44,13 +44,12 @@ function getModel(systemInstruction, maxOutputTokens) {
     generationConfig: {
       maxOutputTokens,
       temperature: 0.4,
-      // Gemini 2.5/3.x Flash models spend part of maxOutputTokens on hidden
-      // internal reasoning before writing the visible answer, which was
-      // silently truncating short doubt explanations. A doubt-solver
-      // doesn't need that extra reasoning step, so we disable it — this
-      // both fixes truncation AND speeds up responses noticeably.
-      thinkingConfig: { thinkingBudget: 0 },
-    },
+        // Gemini 3.x models use thinkingLevel, not the legacy thinkingBudget —
+        // sending thinkingBudget causes a 400 "invalid argument" error on 3.x
+        // models. "low" keeps reasoning fast/cheap while still solving properly
+        // (curriculum-level math/science doubts do need some real reasoning,
+        // unlike pure classification tasks where "minimal" would fit better).
+        thinkingConfig: { thinkingLevel: "low" },    },
   });
 }
 
