@@ -184,7 +184,7 @@ export default function App() {
       const results = await solveDoubts(pending);
       for (const r of results) {
         if (r.status === "solved") {
-          await markSolved(deviceId, r.id, r.answer, r.subject);
+          await markSolved(deviceId, r.id, r.answer, r.subject, r);
         } else {
           await markError(deviceId, r.id, r.error);
         }
@@ -219,7 +219,7 @@ export default function App() {
       const results = await solveDoubts([doubt]);
       const r = results[0];
       if (r && r.status === "solved") {
-        await markSolved(deviceId, r.id, r.answer, r.subject);
+        await markSolved(deviceId, r.id, r.answer, r.subject, r);
       } else {
         await markError(deviceId, doubt.id, (r && r.error) || "Still couldn't solve this one.");
       }
@@ -327,6 +327,7 @@ export default function App() {
                       onRetry={handleRetry}
                       retrying={retryingId === d.id}
                       copy={copy}
+                      classroomMode={classroomMode}
                     />
                   ))}
                 </div>
@@ -347,6 +348,7 @@ export default function App() {
                       onDelete={handleDelete}
                       simplifying={simplifyingId === d.id}
                       copy={copy}
+                      classroomMode={classroomMode}
                     />
                   ))}
                 </div>

@@ -13,11 +13,12 @@ const STATUS_ACCENT = {
   error: "border-l-rose",
 };
 
-export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simplifying, retrying, copy }) {
+export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simplifying, retrying, copy, classroomMode }) {
   const isPending = doubt.status === "pending";
   const isError = doubt.status === "error";
   const isSolved = doubt.status === "solved";
   const answerHistory = doubt.answerHistory || [];
+  const needsReview = Boolean(doubt.needsTeacherReview) && doubt.confidence !== "high";
 
   const [speaking, setSpeaking] = useState(false);
   const utteranceRef = useRef(null);
@@ -148,6 +149,13 @@ export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simpl
 
       {isSolved && (
         <>
+          {needsReview && (
+            <div className="rounded-lg border border-amber-300/30 bg-amber-300/10 px-3.5 py-3 text-sm text-amber-100">
+              <p className="font-semibold">{classroomMode ? "Needs teacher review" : "Please verify this explanation"}</p>
+              <p className="mt-1 text-xs opacity-80">{doubt.reviewReason || "The question or image may be ambiguous."}</p>
+              {classroomMode && <p className="mt-1 text-xs font-medium">This is a draft, not a final answer.</p>}
+            </div>
+          )}
           {answerHistory.map((entry, index) => (
             <div key={`${entry.savedAt || "answer"}-${index}`} className="space-y-2">
               <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">

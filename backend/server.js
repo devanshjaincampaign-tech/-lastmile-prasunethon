@@ -42,8 +42,8 @@ app.post("/api/solve", async (req, res) => {
     const results = [];
     for (const doubt of doubts) {
       try {
-        const { answer, subject } = await solveDoubt(doubt);
-        results.push({ id: doubt.id, answer, subject, status: "solved" });
+        const { answer, subject, confidence, needsTeacherReview, reviewReason } = await solveDoubt(doubt);
+        results.push({ id: doubt.id, answer, subject, confidence, needsTeacherReview, reviewReason, status: "solved" });
       } catch (err) {
         console.error(`Failed to solve doubt ${doubt.id}:`, err.message);
         results.push({

@@ -36,6 +36,10 @@ RULES YOU MUST FOLLOW:
 5. ${FORMATTING_RULES}
 6. At the end, on a new line, output exactly one line in this format (used internally, not shown to the student as prose):
    SUBJECT: <one or two word subject tag, e.g. "Math", "Physics", "Chemistry", "Biology", "English", "General">
+7. Then output exactly two more internal lines:
+  CONFIDENCE: <high|medium|low>
+  REVIEW_REASON: <short reason, or "none">
+  Use medium or low when the image is unclear, the question is incomplete or ambiguous, the language/script is uncertain, required context is missing, or you are not sure the solution is correct.
 
 Respond with ONLY the explanation followed by the SUBJECT line. No preamble like "Sure, here's the answer".`;
 
@@ -76,10 +80,16 @@ function getModel(systemInstruction, maxOutputTokens) {
 }
 
 function parseSubjectTag(rawText) {
-  const match = rawText.match(/SUBJECT:\s*(.+)\s*$/i);
+  const match = rawText.match(/SUBJECT:\s*(.+)\s*$/im);
+  const confidenceMatch = rawText.match(/CONFIDENCE:\s*(high|medium|low)\s*$/im);
+  const reasonMatch = rawText.match(/REVIEW_REASON:\s*(.+)\s*$/im);
   const subject = match ? match[1].trim() : "General";
-  const answer = match ? rawText.slice(0, match.index).trim() : rawText.trim();
-  return { answer, subject };
+  const confidence = confidenceMatch ? confidenceMatch[1].toLowerCase() : "medium";
+  const reviewReason = reasonMatch ? reasonMatch[1].trim() : "The model did not provide a confidence signal.";
+  const markerStart = [match?.index, confidenceMatch?.index, reasonMatch?.index].filter((index) => index !== undefined).sort((a, b) => a - b)[0];
+  const answer = rawText.slice(0, markerStart ?? rawText.length).trim();
+  const needsTeacherReview = confidence !== "high";
+  return { answer, subject, confidence, needsTeacherReview, reviewReason };
 }
 
 /**
@@ -102,7 +112,12 @@ export async function solveDoubt(doubt) {
 
   const result = await model.generateContent(parts);
   const rawText = result.response.text();
-  return parseSubjectTag(rawText);
+  const parsed = parseSubjectTag(rawText);
+  if (doubt.type === "image" && doubt.inputScript === "model-detected") {
+    parsed.reviewReason = parsed.reviewReason === "none" ? "Handwritten image interpretation should be verified." : parsed.reviewReason;
+    parsed.needsTeacherReview = parsed.needsTeacherReview || parsed.reviewReason !== "none";
+  }
+  return parsed;
 }
 
 /**

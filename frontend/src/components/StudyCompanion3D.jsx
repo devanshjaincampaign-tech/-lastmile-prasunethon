@@ -135,8 +135,8 @@ export default function StudyCompanion3D({ theme }) {
       const flow = isLight ? 0 : 1;
       companion.position.y = Math.sin(elapsed * (isLight ? 1.5 : 1.05)) * (isLight ? 0.07 : 0.12);
       companion.position.x += (Math.sin(elapsed * 0.72) * 0.09 * flow - companion.position.x) * 0.025;
-      companion.rotation.y += (pointer.x * 0.28 - companion.rotation.y) * 0.045;
-      companion.rotation.x += (-pointer.y * 0.1 - companion.rotation.x) * 0.045;
+      companion.rotation.y += (pointer.x * 0.34 - companion.rotation.y) * 0.11;
+      companion.rotation.x += (-pointer.y * 0.14 - companion.rotation.x) * 0.11;
       companion.rotation.z += (Math.sin(elapsed * 0.82) * 0.035 * flow - companion.rotation.z) * 0.03;
       const breath = 1 + Math.sin(elapsed * 0.9) * 0.018 * flow;
       companion.scale.set(breath, breath, breath);
