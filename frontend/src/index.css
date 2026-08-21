@@ -22,9 +22,13 @@ body,
   transition: background-color 900ms ease, color 900ms ease;
 }
 
-.app-shell .glass-sidebar {
-  animation: sidebar-enter 1200ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
-}
+/* NOTE: the sidebar's entrance animation was removed here — it set
+   transform: translateX(0) with fill-mode "both", which permanently
+   pinned the sidebar visible and fought with the open/close toggle's
+   -translate-x-full / translate-x-0 classes (CSS animations with a
+   "both"/"forwards" fill-mode win over plain utility classes on the same
+   property). The open/close transition (defined inline in App.jsx) now
+   fully owns the transform property instead. */
 
 .app-shell main > div:last-child {
   animation: content-enter 1200ms cubic-bezier(0.22, 1, 0.36, 1) 220ms both;
@@ -53,17 +57,6 @@ body,
   }
   to {
     opacity: 1;
-  }
-}
-
-@keyframes sidebar-enter {
-  from {
-    opacity: 0;
-    transform: translateX(-18px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
   }
 }
 
