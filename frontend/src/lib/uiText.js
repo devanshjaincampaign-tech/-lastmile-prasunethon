@@ -37,8 +37,12 @@ export const UI_COPY = {
     latestSimplified: "Latest simplified explanation",
     simplify: "Simplify Further",
     simplifying: "Simplifying...",
-  },
-  hindi: {
+    voiceInput: "Speak your doubt",
+    listeningNow: "Listening...",
+    listen: "Listen",
+    stopSpeaking: "Stop",
+  },  
+    hindi: {
     learningCompanion: "पढ़ाई का साथी",
     newDoubt: "नई शंका",
     yourHistory: "आपका इतिहास",
@@ -76,6 +80,10 @@ export const UI_COPY = {
     latestSimplified: "सबसे आसान नया उत्तर",
     simplify: "और आसान करें",
     simplifying: "आसान किया जा रहा है...",
+    voiceInput: "अपनी शंका बोलें",
+    listeningNow: "सुन रहे हैं...",
+    listen: "सुनें",
+    stopSpeaking: "रोकें",
   },
 };
 

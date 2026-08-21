@@ -1,11 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { getSpeechRecognitionCtor, speechRecognitionSupported, toBcp47 } from "../lib/speechLangs.js";
 
-/**
- * Resizes and compresses an image client-side before it ever touches
- * Firestore — keeps documents small since we store images as base64
- * directly (no Firebase Storage / no Blaze plan required).
- */
 function compressImageToBase64(file, maxDimension = 1000, quality = 0.7) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -53,6 +49,8 @@ export default function DoubtCapture({
 }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [voiceError, setVoiceError] = useState("");
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [capturedPreview, setCapturedPreview] = useState("");
@@ -60,6 +58,68 @@ export default function DoubtCapture({
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const baseTextRef = useRef(""); // text already in the box before this voice session started
+  const voiceSupported = speechRecognitionSupported();
+
+  // Stop any in-progress recognition if the component unmounts mid-listen.
+  useEffect(() => () => recognitionRef.current?.stop(), []);
+
+  function startListening() {
+    if (!voiceSupported || listening || busy) return;
+    const SpeechRecognitionCtor = getSpeechRecognitionCtor();
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = toBcp47(preferredLanguage);
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 1;
+
+    baseTextRef.current = text ? `${text} ` : "";
+    setVoiceError("");
+    recognitionRef.current = recognition;
+
+    recognition.onresult = (event) => {
+      let interim = "";
+      let final = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) final += transcript;
+        else interim += transcript;
+      }
+      if (final) baseTextRef.current += final;
+      setText(baseTextRef.current + interim);
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error:", event.error);
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        setVoiceError("Microphone access was blocked. Allow mic permission to use voice input.");
+      } else if (event.error === "no-speech") {
+        setVoiceError("Didn't catch that — try again.");
+      } else if (event.error === "network") {
+        setVoiceError("Voice input needs an internet connection.");
+      } else {
+        setVoiceError("Voice input isn't working right now. Try typing instead.");
+      }
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+      recognitionRef.current = null;
+    };
+
+    try {
+      recognition.start();
+      setListening(true);
+    } catch (error) {
+      console.error("Could not start speech recognition:", error);
+      setListening(false);
+    }
+  }
+
+  function stopListening() {
+    recognitionRef.current?.stop();
+  }
 
   function releaseCameraStream() {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -226,13 +286,40 @@ export default function DoubtCapture({
           </select>
         </div>
 
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={copy.askPlaceholder}
-          rows={5}
-          className="w-full bg-transparent px-2 py-2.5 text-[16px] font-body text-white placeholder:text-white/35 resize-none focus:outline-none"
-        />
+        <div className="relative">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={copy.askPlaceholder}
+            rows={5}
+            className={`w-full bg-transparent px-2 py-2.5 ${voiceSupported ? "pr-11" : ""} text-[16px] font-body text-white placeholder:text-white/35 resize-none focus:outline-none`}
+          />
+          {voiceSupported && (
+            <button
+              type="button"
+              onClick={listening ? stopListening : startListening}
+              disabled={busy}
+              title={copy.voiceInput}
+              className={`absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full transition disabled:opacity-35 ${
+                listening
+                  ? "bg-rose text-shell animate-pulse"
+                  : "bg-white/[0.08] text-white/70 hover:bg-white/15 hover:text-white"
+              }`}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" />
+              </svg>
+            </button>
+          )}
+        </div>
+        {listening && (
+          <p className="flex items-center gap-1.5 px-2 text-xs font-semibold text-rose">
+            <span className="h-1.5 w-1.5 rounded-full bg-rose animate-pulse" />
+            {copy.listeningNow}
+          </p>
+        )}
+        {voiceError && <p className="px-2 text-xs text-rose">{voiceError}</p>}
 
         <div className="flex flex-wrap items-center gap-2">
           <button
