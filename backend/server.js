@@ -29,7 +29,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 // Solve a batch of doubts in one "Explain Session".
-// Body: { doubts: [{ id, type: "text"|"image", content, mimeType?, preferredLanguage? }] }
+// Body: { doubts: [{ id, type: "text"|"image", content, mimeType?, preferredLanguage?, inputScript? }] }
 app.post("/api/solve", async (req, res) => {
   const { doubts } = req.body;
 

@@ -46,6 +46,16 @@ function buildSystemInstruction(preferredLanguage = "auto") {
   return `${BASE_SYSTEM_INSTRUCTION}\n6. ${languageRule}`;
 }
 
+function scriptHint(doubt) {
+  if (doubt.inputScript === "latin-or-romanized") {
+    return "The text uses Latin letters. It may be English, Hinglish, or a Romanized regional language; do not assume English just because the script is Latin.";
+  }
+  if (doubt.inputScript && doubt.inputScript !== "unknown" && doubt.inputScript !== "model-detected") {
+    return `The input script is likely ${doubt.inputScript}. Read its Unicode text directly and answer in that script unless the selected language preference says otherwise.`;
+  }
+  return "Identify the script from the input itself. Native Unicode text must be read directly, not transliterated or discarded.";
+}
+
 const SIMPLIFY_INSTRUCTION = `You are LastMile, a friendly doubt-solving assistant. You previously gave an explanation to a student. They found it too hard and tapped "Simplify Further". Re-explain the SAME answer in a much simpler way, as if explaining to a younger student (around Class 6 level). Keep the exact same language and script style: Romanized Bhojpuri, Maithili, or Hindi stays Romanized, native-script text stays in its script, Hinglish stays Hinglish, and English stays English. Do not silently convert a student's Romanized local language into formal Hindi or English. Use shorter sentences, simpler words, and a very basic analogy if it helps. ${FORMATTING_RULES} Respond with ONLY the simplified explanation, no preamble.`;
 
 function getModel(systemInstruction, maxOutputTokens) {
@@ -83,11 +93,11 @@ export async function solveDoubt(doubt) {
   let parts;
   if (doubt.type === "image") {
     parts = [
-      { text: "Here is a photo of the student's handwritten doubt. Identify the question and solve it." },
+      { text: `Here is a photo of the student's handwritten doubt. Read native scripts such as Devanagari, Bengali, Tamil, Telugu, Gujarati, Gurmukhi, Malayalam, Kannada, Odia, or Arabic-derived scripts directly. ${scriptHint(doubt)} Identify the question and solve it.` },
       { inlineData: { data: doubt.content, mimeType: doubt.mimeType || "image/jpeg" } },
     ];
   } else {
-    parts = [{ text: `Student's doubt: ${doubt.content}` }];
+    parts = [{ text: `${scriptHint(doubt)}\nStudent's doubt: ${doubt.content}` }];
   }
 
   const result = await model.generateContent(parts);

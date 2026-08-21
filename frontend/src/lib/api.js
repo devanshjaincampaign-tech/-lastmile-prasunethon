@@ -12,6 +12,7 @@ export async function solveDoubts(doubts) {
     content: d.content,
     mimeType: d.mimeType,
     preferredLanguage: d.preferredLanguage || "auto",
+    inputScript: d.inputScript || "unknown",
   }));
 
   const res = await fetch(`${API_BASE}/api/solve`, {

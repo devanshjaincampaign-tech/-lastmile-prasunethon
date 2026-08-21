@@ -253,13 +253,13 @@ body,
 }
 
 .light .study-companion-3d {
-  opacity: 0.3;
-  filter: drop-shadow(0 0 24px rgba(180, 154, 120, 0.22)) drop-shadow(0 24px 34px rgba(32, 35, 31, 0.2));
+  opacity: 0.42;
+  filter: drop-shadow(0 0 18px rgba(110, 78, 51, 0.2)) drop-shadow(0 26px 36px rgba(55, 39, 25, 0.34));
 }
 
 .dark .study-companion-3d {
-  opacity: 0.3;
-  filter: blur(0.1px) drop-shadow(0 0 22px rgba(101, 118, 107, 0.24)) drop-shadow(0 24px 34px rgba(0, 0, 0, 0.6));
+  opacity: 0.42;
+  filter: blur(0.1px) drop-shadow(0 0 30px rgba(184, 216, 192, 0.42)) drop-shadow(0 0 68px rgba(101, 118, 107, 0.26)) drop-shadow(0 24px 34px rgba(0, 0, 0, 0.66));
 }
 
 .app-shell main > div:last-child {
@@ -272,11 +272,11 @@ body,
     top: 16vh;
     width: 330px;
     height: 360px;
-    opacity: 0.2;
+    opacity: 0.3;
   }
 
   .dark .study-companion-3d {
-    opacity: 0.22;
+    opacity: 0.3;
   }
 }
 

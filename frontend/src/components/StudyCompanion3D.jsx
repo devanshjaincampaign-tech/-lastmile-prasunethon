@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-function makeMaterial(color, roughness = 0.42, metalness = 0.08) {
-  return new THREE.MeshStandardMaterial({ color, roughness, metalness });
+function makeMaterial(color, roughness = 0.42, metalness = 0.08, emissive = 0x000000, emissiveIntensity = 0) {
+  return new THREE.MeshStandardMaterial({ color, roughness, metalness, emissive, emissiveIntensity });
 }
 
 export default function StudyCompanion3D({ theme }) {
@@ -35,13 +35,13 @@ export default function StudyCompanion3D({ theme }) {
     const companion = new THREE.Group();
     scene.add(companion);
 
-    const mint = isLight ? 0xb49a78 : 0x65766b;
-    const shell = isLight ? 0xefe1c8 : 0x272c29;
-    const dark = isLight ? 0x5a4839 : 0x121715;
-    const rose = isLight ? 0xa87568 : 0x986c73;
+    const mint = isLight ? 0x806348 : 0x65766b;
+    const shell = isLight ? 0xd7bea0 : 0x272c29;
+    const dark = isLight ? 0x34271e : 0x121715;
+    const rose = isLight ? 0x875348 : 0x986c73;
     const pageColor = isLight ? 0xffffff : 0xf5eadb;
 
-    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.56, 0.68, 8, 20), makeMaterial(mint, 0.34));
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.56, 0.68, 8, 20), makeMaterial(mint, 0.34, 0.08, isLight ? 0x000000 : 0x496b57, isLight ? 0 : 0.8));
     body.position.y = -0.34;
     companion.add(body);
 
@@ -60,7 +60,7 @@ export default function StudyCompanion3D({ theme }) {
     visor.position.set(0, 0.7, 0.47);
     companion.add(visor);
 
-    const eyeMaterial = new THREE.MeshBasicMaterial({ color: isLight ? 0xdff7e5 : 0xb8d8c0 });
+    const eyeMaterial = new THREE.MeshBasicMaterial({ color: isLight ? 0xf8ead2 : 0xb8d8c0 });
     const eyeGeometry = new THREE.SphereGeometry(0.075, 16, 12);
     const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
     const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
@@ -68,7 +68,7 @@ export default function StudyCompanion3D({ theme }) {
     rightEye.position.set(0.17, 0.72, 0.68);
     companion.add(leftEye, rightEye);
 
-    const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.28, 12), makeMaterial(mint, 0.3));
+    const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.28, 12), makeMaterial(mint, 0.3, 0.08, isLight ? 0x000000 : 0x496b57, isLight ? 0 : 0.9));
     antenna.position.set(0, 1.5, 0);
     companion.add(antenna);
     const antennaTip = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 12), new THREE.MeshBasicMaterial({ color: rose }));
@@ -96,7 +96,7 @@ export default function StudyCompanion3D({ theme }) {
 
     const halo = new THREE.Mesh(
       new THREE.TorusGeometry(1.05, 0.025, 12, 64),
-      new THREE.MeshBasicMaterial({ color: mint, transparent: true, opacity: isLight ? 0.4 : 0.62 })
+      new THREE.MeshBasicMaterial({ color: mint, transparent: true, opacity: isLight ? 0.4 : 0.9, blending: THREE.AdditiveBlending })
     );
     halo.rotation.x = Math.PI / 2.6;
     halo.position.y = 0.05;
@@ -132,10 +132,15 @@ export default function StudyCompanion3D({ theme }) {
     let frameId;
     const animate = () => {
       const elapsed = clock.getElapsedTime();
-      companion.position.y = Math.sin(elapsed * 1.5) * 0.07;
+      const flow = isLight ? 0 : 1;
+      companion.position.y = Math.sin(elapsed * (isLight ? 1.5 : 1.05)) * (isLight ? 0.07 : 0.12);
+      companion.position.x += (Math.sin(elapsed * 0.72) * 0.09 * flow - companion.position.x) * 0.025;
       companion.rotation.y += (pointer.x * 0.28 - companion.rotation.y) * 0.045;
       companion.rotation.x += (-pointer.y * 0.1 - companion.rotation.x) * 0.045;
-      halo.rotation.z = elapsed * 0.18;
+      companion.rotation.z += (Math.sin(elapsed * 0.82) * 0.035 * flow - companion.rotation.z) * 0.03;
+      const breath = 1 + Math.sin(elapsed * 0.9) * 0.018 * flow;
+      companion.scale.set(breath, breath, breath);
+      halo.rotation.z = elapsed * (isLight ? 0.18 : 0.11);
       renderer.render(scene, camera);
       frameId = requestAnimationFrame(animate);
     };
