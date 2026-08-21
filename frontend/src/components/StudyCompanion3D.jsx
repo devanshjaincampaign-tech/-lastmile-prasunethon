@@ -158,6 +158,6 @@ export default function StudyCompanion3D({ theme }) {
   }, [theme]);
 
   return (
-    <div ref={mountRef} className="study-companion-3d" aria-label="Animated 3D LastMile learning companion" role="img" />
+    <div ref={mountRef} className="study-companion-3d" aria-label="Vishu, the animated 3D LastMile learning companion" role="img" />
   );
 }
