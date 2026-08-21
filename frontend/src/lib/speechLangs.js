@@ -31,19 +31,43 @@ export function toBcp47(languageKey) {
   return BCP47[languageKey] || "en-IN";
 }
 
+// Languages in the app's selector that have no dedicated STT/TTS locale on
+// any browser today — they're routed to a proxy language above (Hindi,
+// Urdu, or Marathi). Voice will still work for these, but pronunciation
+// and recognition accuracy will be noticeably rougher than for a language
+// with real native support. The UI should set honest expectations for
+// these rather than presenting voice as equally reliable everywhere.
+const LIMITED_VOICE_SUPPORT = new Set([
+  "bhojpuri", "maithili", "bodo", "dogri", "konkani",
+  "manipuri", "sanskrit", "santali", "kashmiri", "sindhi",
+]);
+
+export function hasLimitedVoiceSupport(languageKey) {
+  return LIMITED_VOICE_SUPPORT.has(languageKey);
+}
+
+/** True if this browser has any native speech-recognition support. */
 export function speechRecognitionSupported() {
   return typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 }
 
+/** True if this browser has any native speech-synthesis (TTS) support. */
 export function speechSynthesisSupported() {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
+/** Returns the SpeechRecognition constructor for this browser, or null. */
 export function getSpeechRecognitionCtor() {
   if (typeof window === "undefined") return null;
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
+/**
+ * Picks the best available TTS voice for a given BCP-47 language, waiting
+ * briefly for the browser's (async, sometimes slow-to-populate) voice list
+ * if it hasn't loaded yet. Resolves to null if nothing matches — the
+ * browser will still use its default voice as long as utterance.lang is set.
+ */
 export function pickVoice(bcp47) {
   return new Promise((resolve) => {
     if (!speechSynthesisSupported()) return resolve(null);
