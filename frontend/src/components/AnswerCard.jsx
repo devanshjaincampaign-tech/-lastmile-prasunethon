@@ -1,4 +1,12 @@
 // frontend/src/components/AnswerCard.jsx
+import { useEffect, useRef, useState } from "react";
+import {
+  speechSynthesisSupported,
+  toBcp47,
+  pickVoice,
+  hasLimitedVoiceSupport,
+} from "../lib/speechLangs.js";
+
 const STATUS_ACCENT = {
   pending: "border-l-mint",
   solved: "border-l-mint",
@@ -10,6 +18,62 @@ export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simpl
   const isError = doubt.status === "error";
   const isSolved = doubt.status === "solved";
   const answerHistory = doubt.answerHistory || [];
+
+  const [speaking, setSpeaking] = useState(false);
+  const utteranceRef = useRef(null);
+  const ttsSupported = speechSynthesisSupported();
+  const limitedVoice = hasLimitedVoiceSupport(doubt.preferredLanguage);
+
+  // If this card is speaking and gets unmounted (e.g. the doubt is
+  // deleted), cancel that utterance rather than let it keep talking.
+  useEffect(() => {
+    return () => {
+      if (utteranceRef.current) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  async function handleListen() {
+    if (!ttsSupported || !doubt.answer) return;
+
+    // Only one answer should ever be speaking at a time across the whole
+    // app — cancel anything else in progress before starting this one.
+    window.speechSynthesis.cancel();
+
+    if (speaking) {
+      // We were the one speaking — cancel() above already stopped us.
+      setSpeaking(false);
+      utteranceRef.current = null;
+      return;
+    }
+
+    const bcp47 = toBcp47(doubt.preferredLanguage);
+    const utterance = new SpeechSynthesisUtterance(doubt.answer);
+    utterance.lang = bcp47;
+    utterance.rate = 0.95;
+
+    const voice = await pickVoice(bcp47);
+    if (voice) utterance.voice = voice;
+
+    utterance.onend = () => {
+      setSpeaking(false);
+      utteranceRef.current = null;
+    };
+    utterance.onerror = (event) => {
+      // "interrupted"/"canceled" fire naturally when we cancel() to switch
+      // cards or the user taps Stop — not real errors, so stay quiet.
+      if (event.error !== "interrupted" && event.error !== "canceled") {
+        console.error("Speech synthesis error:", event.error);
+      }
+      setSpeaking(false);
+      utteranceRef.current = null;
+    };
+
+    utteranceRef.current = utterance;
+    setSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  }
 
   const imageSrc =
     doubt.type === "image" && doubt.content
@@ -34,7 +98,7 @@ export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simpl
             </span>
           )}
           {doubt.type === "image" && (
-            <span className="text-[11px] text-inkMuted dark:text-white/40 font-body">photo doubt</span>
+            <span className="text-[11px] text-white/40 font-body">photo doubt</span>
           )}
         </div>
         <button
@@ -102,17 +166,40 @@ export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simpl
               {doubt.answer}
             </div>
           </div>
-          <button
-            onClick={() => onSimplify(doubt)}
-            disabled={simplifying}
-            className="text-xs font-semibold text-mint hover:text-white disabled:opacity-40 font-body transition"
-          >
-            {simplifying
-              ? copy.simplifying
-              : doubt.gradeLevel === "simplified"
-                ? copy.simplify
-                : copy.simplify}
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => onSimplify(doubt)}
+              disabled={simplifying}
+              className="text-xs font-semibold text-mint hover:text-white disabled:opacity-40 font-body transition"
+            >
+              {simplifying
+                ? copy.simplifying
+                : doubt.gradeLevel === "simplified"
+                  ? copy.simplify
+                  : copy.simplify}
+            </button>
+
+            {ttsSupported && (
+              <button
+                onClick={handleListen}
+                className={`flex items-center gap-1.5 text-xs font-semibold font-body transition ${
+                  speaking ? "text-rose" : "text-white/55 hover:text-white"
+                }`}
+                title={limitedVoice ? "Voice support for this language is limited — pronunciation may be rough" : undefined}
+              >
+                {speaking ? (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5" /></svg>
+                ) : (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                    <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+                  </svg>
+                )}
+                {speaking ? copy.stopSpeaking : copy.listen}
+                {limitedVoice && !speaking && <span className="text-white/25">*</span>}
+              </button>
+            )}
+          </div>
         </>
       )}
     </div>

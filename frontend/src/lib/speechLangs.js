@@ -31,12 +31,6 @@ export function toBcp47(languageKey) {
   return BCP47[languageKey] || "en-IN";
 }
 
-// Languages in the app's selector that have no dedicated STT/TTS locale on
-// any browser today — they're routed to a proxy language above (Hindi,
-// Urdu, or Marathi). Voice will still work for these, but pronunciation
-// and recognition accuracy will be noticeably rougher than for a language
-// with real native support. The UI should set honest expectations for
-// these rather than presenting voice as equally reliable everywhere.
 const LIMITED_VOICE_SUPPORT = new Set([
   "bhojpuri", "maithili", "bodo", "dogri", "konkani",
   "manipuri", "sanskrit", "santali", "kashmiri", "sindhi",

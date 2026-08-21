@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { getSpeechRecognitionCtor, speechRecognitionSupported, toBcp47 } from "../lib/speechLangs.js";
+import { getSpeechRecognitionCtor, speechRecognitionSupported, toBcp47, hasLimitedVoiceSupport } from "../lib/speechLangs.js";
 
 function compressImageToBase64(file, maxDimension = 1000, quality = 0.7) {
   return new Promise((resolve, reject) => {
@@ -61,6 +61,7 @@ export default function DoubtCapture({
   const recognitionRef = useRef(null);
   const baseTextRef = useRef(""); // text already in the box before this voice session started
   const voiceSupported = speechRecognitionSupported();
+  const limitedVoice = hasLimitedVoiceSupport(preferredLanguage);
 
   // Stop any in-progress recognition if the component unmounts mid-listen.
   useEffect(() => () => recognitionRef.current?.stop(), []);
@@ -299,8 +300,7 @@ export default function DoubtCapture({
               type="button"
               onClick={listening ? stopListening : startListening}
               disabled={busy}
-              title={copy.voiceInput}
-              className={`absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full transition disabled:opacity-35 ${
+                title={limitedVoice ? "Voice recognition for this language is limited — pronunciation accuracy may be rough" : copy.voiceInput}              className={`absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full transition disabled:opacity-35 ${
                 listening
                   ? "bg-rose text-shell animate-pulse"
                   : "bg-white/[0.08] text-white/70 hover:bg-white/15 hover:text-white"
