@@ -169,12 +169,37 @@ export default function App() {
     [doubts]
   );
 
-  async function handleAddText(text, language) {
-    await addTextDoubt(deviceId, text, classroomMode ? studentName : "Self", language);
+  async function handleAddText(text, language, solveNow = false) {
+    const id = await addTextDoubt(deviceId, text, classroomMode ? studentName : "Self", language);
+    if (solveNow) {
+      await solveOneNow({ id, type: "text", content: text, preferredLanguage: language });
+    }
   }
 
-  async function handleAddImage(base64, mimeType, language) {
-    await addImageDoubt(deviceId, base64, mimeType, classroomMode ? studentName : "Self", language);
+  async function handleAddImage(base64, mimeType, language, note = "", solveNow = false) {
+    const id = await addImageDoubt(deviceId, base64, mimeType, classroomMode ? studentName : "Self", language, note);
+    if (solveNow) {
+      await solveOneNow({ id, type: "image", content: base64, mimeType, note, preferredLanguage: language });
+    }
+  }
+
+  /** Shared single-doubt solve, used by both "Solve Now" (new doubt) and Retry (existing doubt). */
+  async function solveOneNow(doubtLike) {
+    setRetryingId(doubtLike.id);
+    try {
+      const results = await solveDoubts([doubtLike]);
+      const r = results[0];
+      if (r && r.status === "solved") {
+        await markSolved(deviceId, r.id, r.answer, r.subject);
+      } else {
+        await markError(deviceId, doubtLike.id, (r && r.error) || "Couldn't solve this one.");
+      }
+    } catch (err) {
+      console.error("Instant solve failed:", err);
+      await markError(deviceId, doubtLike.id, "Couldn't reach the solving server. Try again.");
+    } finally {
+      setRetryingId(null);
+    }
   }
 
   async function handleSolveSession() {
@@ -184,7 +209,7 @@ export default function App() {
       const results = await solveDoubts(pending);
       for (const r of results) {
         if (r.status === "solved") {
-          await markSolved(deviceId, r.id, r.answer, r.subject, r);
+          await markSolved(deviceId, r.id, r.answer, r.subject);
         } else {
           await markError(deviceId, r.id, r.error);
         }
@@ -214,21 +239,7 @@ export default function App() {
 
   /** Retries a single failed doubt without needing to re-solve the whole batch. */
   async function handleRetry(doubt) {
-    setRetryingId(doubt.id);
-    try {
-      const results = await solveDoubts([doubt]);
-      const r = results[0];
-      if (r && r.status === "solved") {
-        await markSolved(deviceId, r.id, r.answer, r.subject, r);
-      } else {
-        await markError(deviceId, doubt.id, (r && r.error) || "Still couldn't solve this one.");
-      }
-    } catch (err) {
-      console.error("Retry failed:", err);
-      await markError(deviceId, doubt.id, "Couldn't reach the solving server. Try again.");
-    } finally {
-      setRetryingId(null);
-    }
+    await solveOneNow(doubt);
   }
 
   async function handleDelete(doubtId) {
@@ -327,7 +338,6 @@ export default function App() {
                       onRetry={handleRetry}
                       retrying={retryingId === d.id}
                       copy={copy}
-                      classroomMode={classroomMode}
                     />
                   ))}
                 </div>
@@ -348,7 +358,6 @@ export default function App() {
                       onDelete={handleDelete}
                       simplifying={simplifyingId === d.id}
                       copy={copy}
-                      classroomMode={classroomMode}
                     />
                   ))}
                 </div>

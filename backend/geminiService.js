@@ -19,45 +19,28 @@ const FORMATTING_RULES = `FORMATTING RULES (the app displays plain text only —
 - NEVER use Markdown syntax: no **bold**, no * or - bullet symbols, no # headings. Use plain numbered lines like "Step 1:" on their own line instead.
 - Keep it SHORT: aim for under 120 words for a typical doubt. Solve the student's actual question directly — do NOT make up a separate example problem to explain the method first.`;
 
-const BASE_SYSTEM_INSTRUCTION = `You are LastMile, a friendly doubt-solving assistant for Indian students in Tier 3-5 towns, many studying in Hindi or regional-medium government schools.
+const BASE_SYSTEM_INSTRUCTION_HEAD = `You are LastMile, a friendly doubt-solving assistant for Indian students in Tier 3-5 towns. Your students study in many different mediums — some in Hindi or regional-medium government schools, many in English-medium schools. Do not assume every student prefers Hindi or Hinglish — many will write and expect answers in plain English, and that must be respected exactly as much as any other language.
 
 RULES YOU MUST FOLLOW:
-1. Read the student's doubt (it may be typed as Hinglish, mixed Hindi-English, or plain English; it may also be a photo of a handwritten problem).
-2. If the doubt is an image, first identify the actual question/problem written in the image, then solve it.
+1. Read the student's doubt (it may be typed as Hinglish, mixed Hindi-English, plain English, or a regional language; it may also be a photo of a handwritten or printed problem).
+2. If the doubt is an image, first read and identify the actual question/problem written or printed in the image — including detecting what language and script IT is written in — then solve it.
 3. Explain the answer step-by-step, but MATCH THE STUDENT'S OWN REGISTER:
    - If they wrote in Hinglish/casual mixed language, explain back in a similarly natural, conversational Hinglish tone — NOT stiff textbook-formal English, and not pure Hindi if they wrote Hinglish.
-   - If they wrote in plain English, explain in clear, simple English.
-   - Never sound like a formal textbook. Sound like a patient senior student or older sibling explaining it.
-4. Treat language and script as separate things:
-  - Roman letters do NOT automatically mean English. Understand Romanized Hindi, Bhojpuri, Maithili, and other regional languages written with English letters.
-  - If the student writes a regional language using Roman letters, reply in that same regional language using Roman letters, preserving a natural local register and accent where possible.
-  - If the student writes in a native script, reply in that script unless an explicit language preference asks for another script.
-  - Preserve common English academic terms when they make the explanation clearer; do not translate technical names inaccurately.
-5. ${FORMATTING_RULES}
+   - If they wrote in plain English, explain in clear, simple English. Do NOT switch to Hindi or Hinglish just because that's common for this app's other users — English input gets an English answer, full stop.
+   - If a photo shows text in a specific language/script (e.g. a Hindi textbook page, an English worksheet, a Tamil notebook), reply in that same language/script unless the student's own note or language preference says otherwise.
+   - Never sound like a formal textbook. Sound like a patient senior student or older sibling explaining it.`;
+
+const BASE_SYSTEM_INSTRUCTION_TAIL = `${"5"}. ${FORMATTING_RULES}
 6. At the end, on a new line, output exactly one line in this format (used internally, not shown to the student as prose):
    SUBJECT: <one or two word subject tag, e.g. "Math", "Physics", "Chemistry", "Biology", "English", "General">
-7. Then output exactly two more internal lines:
-  CONFIDENCE: <high|medium|low>
-  REVIEW_REASON: <short reason, or "none">
-  Use medium or low when the image is unclear, the question is incomplete or ambiguous, the language/script is uncertain, required context is missing, or you are not sure the solution is correct.
 
 Respond with ONLY the explanation followed by the SUBJECT line. No preamble like "Sure, here's the answer".`;
 
 function buildSystemInstruction(preferredLanguage = "auto") {
   const languageRule = preferredLanguage === "auto"
-    ? "Detect the student's language, script, and register. Roman letters do not necessarily mean English: understand Romanized Hindi, Bhojpuri, Maithili, and other regional languages. Reply in the same language and script style, including the same Romanized local-language style when that is how the student wrote."
-    : `Prefer ${preferredLanguage} for the explanation. Match the student's script: if the input was written using Roman letters, reply using Roman letters; if it was written in a native script, use that script. Preserve local phrasing and accent rather than converting it into formal Hindi or English.`;
-  return `${BASE_SYSTEM_INSTRUCTION}\n6. ${languageRule}`;
-}
-
-function scriptHint(doubt) {
-  if (doubt.inputScript === "latin-or-romanized") {
-    return "The text uses Latin letters. It may be English, Hinglish, or a Romanized regional language; do not assume English just because the script is Latin.";
-  }
-  if (doubt.inputScript && doubt.inputScript !== "unknown" && doubt.inputScript !== "model-detected") {
-    return `The input script is likely ${doubt.inputScript}. Read its Unicode text directly and answer in that script unless the selected language preference says otherwise.`;
-  }
-  return "Identify the script from the input itself. Native Unicode text must be read directly, not transliterated or discarded.";
+    ? `CRITICAL — LANGUAGE: Detect the student's actual language, script, and register from what they wrote (or what's written in their photo) and reply in that SAME language/script. Roman letters do not automatically mean English or Hinglish: understand Romanized Hindi, Bhojpuri, Maithili, and other regional languages when that's what's actually being used. But equally — plain English input means the reply is in plain English. Never default to Hindi/Hinglish as a fallback; only use it when the student's own input is actually in Hindi/Hinglish.`
+    : `CRITICAL — LANGUAGE: The student has explicitly requested the reply in "${preferredLanguage}". Use that language for your explanation regardless of which language/script the doubt itself was written in. Match script conventions naturally for that language (native script unless the student's own text used Roman letters and the language is commonly Romanized).`;
+  return `${BASE_SYSTEM_INSTRUCTION_HEAD}\n4. ${languageRule}\n${BASE_SYSTEM_INSTRUCTION_TAIL}`;
 }
 
 const SIMPLIFY_INSTRUCTION = `You are LastMile, a friendly doubt-solving assistant. You previously gave an explanation to a student. They found it too hard and tapped "Simplify Further". Re-explain the SAME answer in a much simpler way, as if explaining to a younger student (around Class 6 level). Keep the exact same language and script style: Romanized Bhojpuri, Maithili, or Hindi stays Romanized, native-script text stays in its script, Hinglish stays Hinglish, and English stays English. Do not silently convert a student's Romanized local language into formal Hindi or English. Use shorter sentences, simpler words, and a very basic analogy if it helps. ${FORMATTING_RULES} Respond with ONLY the simplified explanation, no preamble.`;
@@ -70,54 +53,47 @@ function getModel(systemInstruction, maxOutputTokens) {
     generationConfig: {
       maxOutputTokens,
       temperature: 0.4,
-        // Gemini 3.x models use thinkingLevel, not the legacy thinkingBudget —
-        // sending thinkingBudget causes a 400 "invalid argument" error on 3.x
-        // models. "low" keeps reasoning fast/cheap while still solving properly
-        // (curriculum-level math/science doubts do need some real reasoning,
-        // unlike pure classification tasks where "minimal" would fit better).
-        thinkingConfig: { thinkingLevel: "low" },    },
+      // Gemini 3.x models use thinkingLevel, not the legacy thinkingBudget —
+      // sending thinkingBudget causes a 400 "invalid argument" error on 3.x
+      // models. "low" keeps reasoning fast/cheap while still solving properly
+      // (curriculum-level math/science doubts do need some real reasoning,
+      // unlike pure classification tasks where "minimal" would fit better).
+      thinkingConfig: { thinkingLevel: "low" },
+    },
   });
 }
 
 function parseSubjectTag(rawText) {
-  const match = rawText.match(/SUBJECT:\s*(.+)\s*$/im);
-  const confidenceMatch = rawText.match(/CONFIDENCE:\s*(high|medium|low)\s*$/im);
-  const reasonMatch = rawText.match(/REVIEW_REASON:\s*(.+)\s*$/im);
+  const match = rawText.match(/SUBJECT:\s*(.+)\s*$/i);
   const subject = match ? match[1].trim() : "General";
-  const confidence = confidenceMatch ? confidenceMatch[1].toLowerCase() : "medium";
-  const reviewReason = reasonMatch ? reasonMatch[1].trim() : "The model did not provide a confidence signal.";
-  const markerStart = [match?.index, confidenceMatch?.index, reasonMatch?.index].filter((index) => index !== undefined).sort((a, b) => a - b)[0];
-  const answer = rawText.slice(0, markerStart ?? rawText.length).trim();
-  const needsTeacherReview = confidence !== "high";
-  return { answer, subject, confidence, needsTeacherReview, reviewReason };
+  const answer = match ? rawText.slice(0, match.index).trim() : rawText.trim();
+  return { answer, subject };
 }
 
 /**
  * Solve a single doubt. `doubt` is either:
  *   { type: "text", content: "<the doubt text>" }
- *   { type: "image", content: "<base64 data>", mimeType: "image/jpeg" }
+ *   { type: "image", content: "<base64 data>", mimeType: "image/jpeg", note? }
  */
 export async function solveDoubt(doubt) {
   const model = getModel(buildSystemInstruction(doubt.preferredLanguage), 1024);
 
   let parts;
   if (doubt.type === "image") {
+    const notePart = doubt.note && doubt.note.trim()
+      ? `The student attached this specific note/question about the photo: "${doubt.note.trim()}". Focus your answer on exactly that — if the photo shows multiple questions or a page of notes, answer only what the note asks about, not everything visible in the image.`
+      : "Identify the actual question/problem written or printed in the image and solve it.";
     parts = [
-      { text: `Here is a photo of the student's handwritten doubt. Read native scripts such as Devanagari, Bengali, Tamil, Telugu, Gujarati, Gurmukhi, Malayalam, Kannada, Odia, or Arabic-derived scripts directly. ${scriptHint(doubt)} Identify the question and solve it.` },
+      { text: `Here is a photo the student added. First read what language and script the text IN THE IMAGE is actually written in — that determines your reply language unless a language preference overrides it. ${notePart}` },
       { inlineData: { data: doubt.content, mimeType: doubt.mimeType || "image/jpeg" } },
     ];
   } else {
-    parts = [{ text: `${scriptHint(doubt)}\nStudent's doubt: ${doubt.content}` }];
+    parts = [{ text: `Student's doubt: ${doubt.content}` }];
   }
 
   const result = await model.generateContent(parts);
   const rawText = result.response.text();
-  const parsed = parseSubjectTag(rawText);
-  if (doubt.type === "image" && doubt.inputScript === "model-detected") {
-    parsed.reviewReason = parsed.reviewReason === "none" ? "Handwritten image interpretation should be verified." : parsed.reviewReason;
-    parsed.needsTeacherReview = parsed.needsTeacherReview || parsed.reviewReason !== "none";
-  }
-  return parsed;
+  return parseSubjectTag(rawText);
 }
 
 /**

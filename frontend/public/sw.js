@@ -1,5 +1,5 @@
 const CACHE_NAME = "lastmile-shell-v1";
-const APP_SHELL = ["/", "/index.html", "/manifest.json", "/icons/lastmile-192.svg", "/icons/lastmile-512.svg"];
+const APP_SHELL = ["/", "/index.html", "/manifest.json", "/icons/lastmile-192.png", "/icons/lastmile-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

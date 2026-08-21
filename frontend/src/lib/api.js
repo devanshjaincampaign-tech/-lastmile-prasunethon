@@ -2,7 +2,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 /**
  * Sends a batch of pending doubts to the backend to be solved.
- * `doubts` should be [{ id, type, content, mimeType? }].
+ * `doubts` should be [{ id, type, content, mimeType?, note? }].
  * Returns [{ id, status, answer?, subject?, error? }].
  */
 export async function solveDoubts(doubts) {
@@ -11,8 +11,8 @@ export async function solveDoubts(doubts) {
     type: d.type,
     content: d.content,
     mimeType: d.mimeType,
+    note: d.note || "",
     preferredLanguage: d.preferredLanguage || "auto",
-    inputScript: d.inputScript || "unknown",
   }));
 
   const res = await fetch(`${API_BASE}/api/solve`, {

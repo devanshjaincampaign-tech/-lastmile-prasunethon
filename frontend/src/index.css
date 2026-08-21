@@ -31,7 +31,7 @@ body,
    fully owns the transform property instead. */
 
 .app-shell main > div:last-child {
-  animation: content-enter 1200ms cubic-bezier(0.22, 1, 0.36, 1) 220ms both;
+  animation: content-fade 1200ms cubic-bezier(0.22, 1, 0.36, 1) 220ms both;
 }
 
 .app-shell .glass-sidebar,
@@ -68,6 +68,15 @@ body,
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes content-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
@@ -235,7 +244,7 @@ body,
 .study-companion-3d {
   position: fixed;
   top: 12vh;
-  left: 50%;
+  left: calc(50% + 138px);
   z-index: 0;
   width: clamp(360px, 48vw, 700px);
   height: clamp(360px, 56vh, 620px);
@@ -270,6 +279,7 @@ body,
 @media (max-width: 639px) {
   .study-companion-3d {
     top: 16vh;
+    left: 50%;
     width: 330px;
     height: 360px;
     opacity: 0.3;
@@ -277,6 +287,12 @@ body,
 
   .dark .study-companion-3d {
     opacity: 0.3;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  .study-companion-3d {
+    left: 50%;
   }
 }
 
