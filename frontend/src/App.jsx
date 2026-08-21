@@ -12,6 +12,7 @@ import {
 import { solveDoubts, simplifyDoubt } from "./lib/api.js";
 import DoubtCapture from "./components/DoubtCapture.jsx";
 import AnswerCard from "./components/AnswerCard.jsx";
+import StudyCompanion3D from "./components/StudyCompanion3D.jsx";
 import { getUiCopy, INTERFACE_LANGUAGES } from "./lib/uiText.js";
 
 function useTheme() {
@@ -114,7 +115,7 @@ function Sidebar({ doubts, pending, classroomMode, setClassroomMode, theme, setT
           ))}
         </nav>
         <div className="sticky bottom-0 z-10 -mx-3 mt-4 shrink-0 border-t border-white/[0.08] bg-[#111110]/80 px-3 pt-4 backdrop-blur-xl">
-          <label className="flex cursor-pointer items-center justify-between px-2 text-xs text-white/55">{copy.classroomMode}<span className="relative inline-block h-5 w-9"><input type="checkbox" checked={classroomMode} onChange={(e) => setClassroomMode(e.target.checked)} className="peer sr-only" /><span className="absolute inset-0 rounded-full bg-white/15 peer-checked:bg-mint/70 transition-colors" /><span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-4" /></span></label>
+          <label className="classroom-label flex cursor-pointer items-center justify-between px-2 text-xs text-white/55">{copy.classroomMode}<span className="relative inline-block h-5 w-9"><input type="checkbox" checked={classroomMode} onChange={(e) => setClassroomMode(e.target.checked)} className="peer sr-only" /><span className="classroom-track absolute inset-0 rounded-full bg-white/15 peer-checked:bg-mint/70 transition-colors" /><span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-4" /></span></label>
           <label className="mt-4 flex items-center justify-between gap-2 px-2 text-xs text-white/55">{copy.uiLanguage}<select value={uiLanguage} onChange={(e) => setUiLanguage(e.target.value)} className="language-select min-w-0 max-w-[126px] rounded-md border border-white/10 bg-white/[0.06] px-2 py-1 text-xs text-white/75 outline-none">{INTERFACE_LANGUAGES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
           <p className="px-2 pt-4 text-[11px] text-white/25">{copy.footer}</p>
         </div>
@@ -247,8 +248,14 @@ export default function App() {
 
   if (!deviceId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-paper dark:bg-navyDark">
-        <p className="text-ink/40 dark:text-white/40 text-sm font-body">Connecting...</p>
+      <div className={`loading-screen ${theme === "light" ? "loading-light" : "loading-dark"}`}>
+        <div className="loading-orbit" aria-hidden="true"><span /></div>
+        <LastMileBadge />
+        <div className="mt-5 text-center">
+          <p className="loading-wordmark">LastMile</p>
+          <p className="loading-status">{uiLanguage === "hindi" ? "आपके लिए जगह तैयार हो रही है..." : "Preparing your learning space..."}</p>
+        </div>
+        <div className="loading-progress" aria-hidden="true"><span /></div>
       </div>
     );
   }
@@ -275,9 +282,10 @@ export default function App() {
           </header>
           <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-12 sm:px-8 sm:pb-20 sm:pt-14 md:pt-24">
             <div className="mb-10 text-center sm:mb-12">
-              <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-mint/80 sm:text-xs sm:tracking-[0.2em]">LastMile AI</p>
+              <p className="brand-kicker mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-mint/80 sm:text-xs sm:tracking-[0.2em]">LastMile AI</p>
               <h1 className="font-display text-[2.1rem] font-semibold leading-tight tracking-tight text-white sm:text-5xl">{copy.welcomeTitle}</h1>
               <p className="mx-auto mt-4 max-w-lg text-[13px] leading-6 text-white/45 sm:text-sm">{copy.welcomeSubtitle}</p>
+              <StudyCompanion3D theme={theme} />
             </div>
             <DoubtCapture
               onAddText={handleAddText}
