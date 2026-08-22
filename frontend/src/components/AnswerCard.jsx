@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   speechSynthesisSupported,
   toBcp47,
-  pickVoice,
+  pickVoiceSync,
   voiceAvailableFor,
 } from "../lib/speechLangs.js";
 
@@ -49,25 +49,24 @@ export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simpl
     };
   }, []);
 
-  async function handleListen() {
-    if (!ttsSupported || !doubt.answer) return;
+ function handleListen() {
+  if (!ttsSupported || !doubt.answer) return;
 
-    // Only one answer should ever be speaking at a time across the whole
-    // app — cancel anything else in progress before starting this one.
+  if (speaking) {
     window.speechSynthesis.cancel();
+    setSpeaking(false);
+    utteranceRef.current = null;
+    return;
+  }
 
-    if (speaking) {
-      // We were the one speaking — cancel() above already stopped us.
-      setSpeaking(false);
-      utteranceRef.current = null;
-      return;
-    }
+  window.speechSynthesis.cancel();
 
+  setTimeout(() => {
     const utterance = new SpeechSynthesisUtterance(doubt.answer);
     utterance.lang = bcp47;
     utterance.rate = 0.95;
 
-    const voice = await pickVoice(bcp47);
+    const voice = pickVoiceSync(bcp47);
     if (voice) utterance.voice = voice;
 
     utterance.onend = () => {
@@ -75,8 +74,6 @@ export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simpl
       utteranceRef.current = null;
     };
     utterance.onerror = (event) => {
-      // "interrupted"/"canceled" fire naturally when we cancel() to switch
-      // cards or the user taps Stop — not real errors, so stay quiet.
       if (event.error !== "interrupted" && event.error !== "canceled") {
         console.error("Speech synthesis error:", event.error);
       }
@@ -85,9 +82,11 @@ export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simpl
     };
 
     utteranceRef.current = utterance;
-    setSpeaking(true);
     window.speechSynthesis.speak(utterance);
-  }
+  }, 50);
+
+  setSpeaking(true);
+}
 
   const imageSrc =
     doubt.type === "image" && doubt.content
