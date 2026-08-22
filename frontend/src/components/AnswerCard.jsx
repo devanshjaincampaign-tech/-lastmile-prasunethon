@@ -4,7 +4,7 @@ import {
   speechSynthesisSupported,
   toBcp47,
   pickVoice,
-  hasLimitedVoiceSupport,
+  voiceAvailableFor,
 } from "../lib/speechLangs.js";
 
 const STATUS_ACCENT = {
@@ -22,7 +22,22 @@ export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simpl
   const [speaking, setSpeaking] = useState(false);
   const utteranceRef = useRef(null);
   const ttsSupported = speechSynthesisSupported();
-  const limitedVoice = hasLimitedVoiceSupport(doubt.preferredLanguage);
+  const bcp47 = toBcp47(doubt.preferredLanguage);
+
+  // Live per-device voice check — re-runs when Chrome's async voice list
+  // populates, instead of relying on a hardcoded guess of which languages
+  // are "usually" missing a voice.
+  const [voiceReady, setVoiceReady] = useState(true);
+  useEffect(() => {
+    if (!ttsSupported) return;
+    const check = () => setVoiceReady(voiceAvailableFor(bcp47));
+    check();
+    const prevHandler = window.speechSynthesis.onvoiceschanged;
+    window.speechSynthesis.onvoiceschanged = check;
+    return () => {
+      window.speechSynthesis.onvoiceschanged = prevHandler || null;
+    };
+  }, [bcp47, ttsSupported]);
 
   // If this card is speaking and gets unmounted (e.g. the doubt is
   // deleted), cancel that utterance rather than let it keep talking.
@@ -48,7 +63,6 @@ export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simpl
       return;
     }
 
-    const bcp47 = toBcp47(doubt.preferredLanguage);
     const utterance = new SpeechSynthesisUtterance(doubt.answer);
     utterance.lang = bcp47;
     utterance.rate = 0.95;
@@ -188,13 +202,12 @@ export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simpl
                   : copy.simplify}
             </button>
 
-            {ttsSupported && (
+            {ttsSupported && voiceReady && (
               <button
                 onClick={handleListen}
                 className={`flex items-center gap-1.5 text-xs font-semibold font-body transition ${
                   speaking ? "text-rose" : "text-white/55 hover:text-white"
                 }`}
-                title={limitedVoice ? "Voice support for this language is limited — pronunciation may be rough" : undefined}
               >
                 {speaking ? (
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5" /></svg>
@@ -205,8 +218,16 @@ export default function AnswerCard({ doubt, onSimplify, onDelete, onRetry, simpl
                   </svg>
                 )}
                 {speaking ? copy.stopSpeaking : copy.listen}
-                {limitedVoice && !speaking && <span className="text-white/25">*</span>}
               </button>
+            )}
+
+            {ttsSupported && !voiceReady && (
+              <span
+                className="text-xs text-white/30 font-body"
+                title="No voice installed on this device for this language"
+              >
+                {copy.listen} unavailable
+              </span>
             )}
           </div>
         </>

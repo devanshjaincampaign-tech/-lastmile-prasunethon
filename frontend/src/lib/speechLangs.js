@@ -31,15 +31,6 @@ export function toBcp47(languageKey) {
   return BCP47[languageKey] || "en-IN";
 }
 
-const LIMITED_VOICE_SUPPORT = new Set([
-  "bhojpuri", "maithili", "bodo", "dogri", "konkani",
-  "manipuri", "sanskrit", "santali", "kashmiri", "sindhi",
-]);
-
-export function hasLimitedVoiceSupport(languageKey) {
-  return LIMITED_VOICE_SUPPORT.has(languageKey);
-}
-
 /** True if this browser has any native speech-recognition support. */
 export function speechRecognitionSupported() {
   return typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -54,6 +45,22 @@ export function speechSynthesisSupported() {
 export function getSpeechRecognitionCtor() {
   if (typeof window === "undefined") return null;
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+/**
+ * True if this browser currently has an installed voice matching the given
+ * BCP-47 language (checked by language-prefix, e.g. "ta" for "ta-IN").
+ * Returns true (optimistically) if the voice list hasn't loaded yet, so the
+ * Listen button doesn't flicker to "unavailable" before Chrome's async
+ * voice list populates — replaces the old hardcoded LIMITED_VOICE_SUPPORT
+ * guess-list with a real per-device check.
+ */
+export function voiceAvailableFor(bcp47) {
+  if (!speechSynthesisSupported()) return false;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return true;
+  const prefix = bcp47.split("-")[0].toLowerCase();
+  return voices.some((v) => v.lang.toLowerCase().startsWith(prefix));
 }
 
 /**
