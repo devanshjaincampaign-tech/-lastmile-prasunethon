@@ -103,12 +103,12 @@ the LastMile interface. Try adding a text doubt and tapping "Solve My Doubts".
 4. Build command: `npm install`
 5. Start command: `npm start`
 6. Add environment variables (`GEMINI_API_KEY`, `GEMINI_MODEL`,
-   `ALLOWED_ORIGINS` — set this to your Vercel URL once you have it)
+   `ALLOWED_ORIGINS` — set this to your Netlify URL once you have it)
 7. Deploy — note the resulting URL (e.g. `https://lastmile-backend.onrender.com`)
 
-### Frontend → Vercel
+### Frontend → Netlify
 
-1. Go to https://vercel.com → New Project → import the same repo
+1. Go to https://netlify.com → New Project → import the same repo
 2. Root directory: `frontend`
 3. Framework preset: Vite (should auto-detect)
 4. Add environment variables (all the `VITE_FIREBASE_*` values, plus
@@ -116,7 +116,7 @@ the LastMile interface. Try adding a text doubt and tapping "Solve My Doubts".
 5. Deploy
 
 Once both are live, go back to your Render backend's environment variables
-and update `ALLOWED_ORIGINS` to include your actual Vercel URL, then
+and update `ALLOWED_ORIGINS` to include your actual Netlify URL, then
 redeploy the backend so CORS allows requests from your live frontend.
 
 ---
